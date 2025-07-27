@@ -4,8 +4,9 @@ import yfinance as yf
 import streamlit as st
 
 class SynBot:
-    api_key = st.secrets.get("openrouter_api_key", None)
-    base_url = "https://openrouter.ai/api/v1"
+    def __init__(self):
+        self.api_key = st.secrets.get("openrouter_api_key", None)
+        self.base_url = "https://openrouter.ai/api/v1"
 
     def _live_price(self, symbol):
         try:
@@ -96,21 +97,49 @@ class SynBot:
             return "🤖 API Key missing! Please add your OpenRouter API key to Streamlit secrets to enable the AI coach."
 
         try:
-            r = requests.post(
+            # Corrected headers for OpenRouter API
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://neurobux-qvmhjhksxa8xchafukx9ng.streamlit.app/",
+                "X-Title": "NeuroBux Finance Tracker"
+            }
+
+            # Use the correct endpoint
+            response = requests.post(
                 f"{self.base_url}/chat/completions",
-                headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
+                headers=headers,
                 json={
                     "model": "openai/gpt-3.5-turbo", 
                     "messages": messages, 
-                    "max_tokens": 500,  # Increased for more detailed responses
-                    "temperature": 0.7,  # Balanced creativity and consistency
+                    "max_tokens": 500,
+                    "temperature": 0.7,
                     "top_p": 0.9
-                }
+                },
+                timeout=30
             )
-            r.raise_for_status()
-            return r.json()["choices"][0]["message"]["content"].strip()
+            
+            # Better error handling
+            if response.status_code == 401:
+                return "🔑 **Authentication Failed!** Your OpenRouter API key is invalid or expired. Please check your OpenRouter account and update the key in Streamlit secrets."
+            elif response.status_code == 429:
+                return "⏳ **Rate Limit Exceeded!** Please wait a moment before making another request."
+            elif response.status_code == 403:
+                return "🚫 **Access Forbidden!** Your API key may not have permission to access this model."
+            
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"].strip()
+            
+        except requests.exceptions.ConnectionError:
+            return "🌐 **Connection Error!** Please check your internet connection and try again."
+        except requests.exceptions.Timeout:
+            return "⏰ **Request Timeout!** The AI service is taking too long to respond. Please try again."
+        except requests.exceptions.HTTPError as e:
+            return f"🤖 **API Error!** HTTP {response.status_code}: {response.text[:100]}..."
+        except KeyError:
+            return "🤖 **Invalid Response!** The AI service returned an unexpected response format."
         except Exception as e:
-            return f"🤖 Sorry, I encountered an error while processing your request: {e}. Please try again or check your internet connection."
+            return f"🤖 **Unexpected Error!** {str(e)[:100]}... Please try again or contact support."
 
 class SmartBudgetAdvisor:
     def __init__(self, analyzer):
