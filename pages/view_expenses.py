@@ -39,16 +39,17 @@ def view_expenses_page(exp_mgr, inc_mgr):
     with col2:
         if st.button("🗑️ Delete Selected Month", key="delete_selected_month"):
             if st.session_state.get('confirm_delete_month', False):
-                # Delete all data for selected month using Supabase
-                start_date = f"{selected_month}-01"
-                end_date = f"{selected_month}-31"
-                
-                # Delete expenses for the month
-                exp_mgr.supabase.table("expenses").delete().eq("user_email", st.session_state.user_email).gte("date", start_date).lte("date", end_date).execute()
-                
-                # Delete income for the month
-                inc_mgr.supabase.table("income").delete().eq("user_email", st.session_state.user_email).gte("date", start_date).lte("date", end_date).execute()
-                
+                like_pattern = f"{selected_month}%"
+                exp_mgr.conn.execute(
+                    "DELETE FROM expenses WHERE user=? AND date LIKE ?", 
+                    (st.session_state.user_email, like_pattern)
+                )
+                inc_mgr.conn.execute(
+                    "DELETE FROM income WHERE user=? AND date LIKE ?", 
+                    (st.session_state.user_email, like_pattern)
+                )
+                exp_mgr.conn.commit()
+                inc_mgr.conn.commit()
                 st.success(f"All data for {selected_month} deleted!")
                 st.session_state.confirm_delete_month = False
                 st.experimental_rerun()
@@ -77,75 +78,32 @@ def view_expenses_page(exp_mgr, inc_mgr):
 
     st.markdown("---")
 
-    # --- EXPENSES SECTION WITH PROPER ID-BASED DELETION ---
+    exp_data = exp_mgr.get_expenses(st.session_state.user_email, year_month=selected_month)
+    inc_data = inc_mgr.get_income(st.session_state.user_email, year_month=selected_month)
+
     st.subheader("💸 Expenses")
-    
-    try:
-        # Get expenses with full database information including IDs
-        supabase = exp_mgr.supabase
-        query = supabase.table("expenses").select("*").eq("user_email", st.session_state.user_email)
-        
-        if selected_month:
-            start_date = f"{selected_month}-01"
-            end_date = f"{selected_month}-31"
-            query = query.gte("date", start_date).lte("date", end_date)
-        
-        exp_result = query.execute()
-        exp_full_data = exp_result.data
-        
-        if exp_full_data:
-            for row in exp_full_data:
-                col1, col2, col3, col4, col5 = st.columns([3, 2, 2, 1, 1])
-                col1.text(row['category'])
-                col2.text(f"₹{row['amount']:.2f}")
-                col3.text(row['date'])
-                col4.empty()
-                
-                # Use the actual database ID for deletion
-                if col5.button("❌", key=f"del_exp_{row['id']}"):
-                    if exp_mgr.delete_expense(st.session_state.user_email, row['id']):
-                        st.success("Expense deleted!")
-                        st.experimental_rerun()
-                    else:
-                        st.error("Failed to delete expense")
-        else:
-            st.info(f"No expenses logged for {selected_month}.")
-            
-    except Exception as e:
-        st.error(f"Error loading expenses: {str(e)}")
+    if exp_data:
+        for idx, row in enumerate(exp_data):
+            col1, col2, col3, col4, col5 = st.columns([3, 2, 2, 1, 1])
+            col1.text(row[1])  # Category
+            col2.text(f"₹{row[2]:.2f}")
+            col3.text(row[3])  # Date
+            col4.empty()
+            if col5.button("❌", key=f"del_exp_{idx}"):
+                exp_mgr.delete_expense(st.session_state.user_email, idx)
+                st.experimental_rerun()
+    else:
+        st.info(f"No expenses logged for {selected_month}.")
 
     st.markdown("---")
-    
-    # --- INCOME SECTION WITH PROPER ID-BASED DELETION ---
     st.subheader("💰 Income")
-    
-    try:
-        # Get income with full database information including IDs
-        query = supabase.table("income").select("*").eq("user_email", st.session_state.user_email)
-        
-        if selected_month:
-            start_date = f"{selected_month}-01"
-            end_date = f"{selected_month}-31"
-            query = query.gte("date", start_date).lte("date", end_date)
-        
-        inc_result = query.execute()
-        inc_full_data = inc_result.data
-        
-        if inc_full_data:
-            for row in inc_full_data:
-                col1, col2, col3 = st.columns([3, 2, 1])
-                col1.text(f"₹{row['amount']:.2f}")
-                col2.text(row['date'])
-                
-                # Use the actual database ID for deletion
-                if col3.button("❌", key=f"del_inc_{row['id']}"):
-                    if inc_mgr.delete_income(st.session_state.user_email, row['id']):
-                        st.success("Income deleted!")
-                        st.experimental_rerun()
-                    else:
-                        st.error("Failed to delete income")
-        else:
-            st.info(f"No income logged for {selected_month}.")
-            
-    except Exception as e:
-        st.error(f"Error loading income: {str(e)}")
+    if inc_data:
+        for idx, row in enumerate(inc_data):
+            col1, col2, col3 = st.columns([3, 2, 1])
+            col1.text(f"₹{row[1]:.2f}")
+            col2.text(row[2])
+            if col3.button("❌", key=f"del_inc_{idx}"):
+                inc_mgr.delete_income(st.session_state.user_email, idx)
+                st.experimental_rerun()
+    else:
+        st.info(f"No income logged for {selected_month}.")
