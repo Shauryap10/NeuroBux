@@ -30,8 +30,14 @@ def export_df_to_pdf(df, title="Expense Report"):
             pdf.cell(col_width, line_height, text, border=1)
         pdf.ln(line_height)
 
-    # Return PDF as bytes
-    return pdf.output(dest='S').encode('latin1')
+    # Fixed: Handle both string and bytes output from pdf.output()
+    pdf_output = pdf.output(dest='S')
+    
+    # Check if output is already bytes or needs encoding
+    if isinstance(pdf_output, bytes):
+        return pdf_output
+    else:
+        return pdf_output.encode('latin1')
 
 def show_confirmation_dialog(action_type, details=""):
     """Show a confirmation dialog for destructive actions"""
