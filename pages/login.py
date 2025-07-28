@@ -88,13 +88,8 @@ def login_page(auth):
                     help="Re-enter your password to confirm"
                 )
             
-            # Password requirements info
-            st.markdown("""
-            **Password Requirements:**
-            - ✅ At least 6 characters
-            - ✅ Contains letters (A-Z, a-z)  
-            - ✅ Contains numbers (0-9)
-            """)
+            # Password requirements info - FIXED
+            st.info("**Password Requirements:** At least 6 characters with letters and numbers")
             
             terms_agreed = st.checkbox(
                 "I agree to the Terms of Service and Privacy Policy",
@@ -128,6 +123,15 @@ def login_page(auth):
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("""
-        **🤖 AI-Powered Insights**
-        - Smart spending
+        st.info("**🤖 AI-Powered Insights**\n- Smart spending analysis\n- Personalized financial advice\n- Automated categorization")
+    
+    with col2:
+        st.info("**📊 Comprehensive Tracking**\n- Income & expense management\n- Visual charts & reports\n- Export capabilities")
+    
+    with col3:
+        st.info("**🔒 Secure & Private**\n- Bank-level security\n- Encrypted data storage\n- Privacy-focused design")
+
+    # Footer
+    st.markdown("---")
+    st.caption("🔒 Your financial data is encrypted and secure | 📱 Access anywhere, anytime | 🤖 AI-powered insights")
+    st.caption("© 2025 NeuroBux - Smart Finance Tracking")
