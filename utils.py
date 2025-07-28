@@ -14,30 +14,46 @@ def export_df_to_pdf(df, title="Expense Report"):
     pdf.set_font("Arial", size=10)
     line_height = pdf.font_size * 2.5
     
-    # Fix for 'epw' attribute error - calculate page width manually
-    page_width = pdf.w - 2 * pdf.l_margin  # Total width minus left and right margins
+    # Calculate page width manually to avoid 'epw' attribute error
+    page_width = pdf.w - 2 * pdf.l_margin
     col_width = page_width / len(df.columns) if len(df.columns) > 0 else page_width
 
-    # Header
+    # Header row
     for col_name in df.columns:
         pdf.cell(col_width, line_height, str(col_name), border=1)
     pdf.ln(line_height)
 
-    # Rows
+    # Data rows
     for row in df.itertuples(index=False):
         for datum in row:
-            text = str(datum)[:20]  # Truncate long text to fit in cells
+            text = str(datum)[:20]  # Truncate long text to fit
             pdf.cell(col_width, line_height, text, border=1)
         pdf.ln(line_height)
 
-    # Fixed: Handle both string and bytes output from pdf.output()
-    pdf_output = pdf.output(dest='S')
-    
-    # Check if output is already bytes or needs encoding
-    if isinstance(pdf_output, bytes):
-        return pdf_output
-    else:
-        return pdf_output.encode('latin1')
+    # Fixed: Handle both string and bytes output properly
+    try:
+        pdf_output = pdf.output(dest='S')
+        
+        # Check if output is already bytes or needs encoding
+        if isinstance(pdf_output, bytes):
+            return pdf_output
+        elif isinstance(pdf_output, str):
+            return pdf_output.encode('latin1')
+        else:
+            # Handle bytearray case
+            return bytes(pdf_output)
+            
+    except Exception as e:
+        # Fallback method using BytesIO
+        pdf_buffer = io.BytesIO()
+        pdf_string = pdf.output(dest='S')
+        
+        if isinstance(pdf_string, (bytes, bytearray)):
+            pdf_buffer.write(bytes(pdf_string))
+        else:
+            pdf_buffer.write(pdf_string.encode('latin1'))
+        
+        return pdf_buffer.getvalue()
 
 def show_confirmation_dialog(action_type, details=""):
     """Show a confirmation dialog for destructive actions"""
