@@ -124,7 +124,7 @@ What would you like to know about your finances today?"""
         
         if st.button("🔄 Clear Chat History", key="clear_chat"):
             st.session_state.messages = []
-            st.experimental_rerun()
+            st.rerun()  # ✅ UPDATED: Changed from st.experimental_rerun()
         
         if st.button("📤 Export Chat", key="export_chat"):
             if st.session_state.messages:
@@ -139,18 +139,3 @@ What would you like to know about your finances today?"""
                     file_name=f"synbot_chat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain"
                 )
-        
-        # Financial tips
-        st.markdown("---")
-        st.markdown("### 💡 Daily Financial Tip")
-        tips = [
-            "Track every expense, no matter how small - they add up!",
-            "Use the 50/30/20 rule: 50% needs, 30% wants, 20% savings",
-            "Build an emergency fund covering 3-6 months of expenses",
-            "Review and negotiate your subscriptions monthly",
-            "Compare prices before making large purchases",
-            "Pay yourself first - save before spending",
-            "Use cash for discretionary spending to avoid overspending"
-        ]
-        import random
-        st.info(f"💡 {random.choice(tips)}")
