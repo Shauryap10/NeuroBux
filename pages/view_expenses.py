@@ -31,7 +31,7 @@ def view_expenses_page(exp_mgr, inc_mgr):
                 inc_mgr.reset_current_month(st.session_state.user_email)
                 st.success("Current month reset!")
                 st.session_state.confirm_reset_view = False
-                st.experimental_rerun()
+                st.rerun()  # ✅ UPDATED: Changed from st.experimental_rerun()
             else:
                 st.session_state.confirm_reset_view = True
                 st.warning("Click again to confirm")
@@ -52,7 +52,7 @@ def view_expenses_page(exp_mgr, inc_mgr):
                 inc_mgr.conn.commit()
                 st.success(f"All data for {selected_month} deleted!")
                 st.session_state.confirm_delete_month = False
-                st.experimental_rerun()
+                st.rerun()  # ✅ UPDATED: Changed from st.experimental_rerun()
             else:
                 st.session_state.confirm_delete_month = True
                 st.warning(f"Click again to delete ALL data for {selected_month}")
@@ -64,7 +64,7 @@ def view_expenses_page(exp_mgr, inc_mgr):
                 inc_mgr.delete_all_user_data(st.session_state.user_email)
                 st.success("All data permanently deleted!")
                 st.session_state.confirm_delete_all_view = False
-                st.experimental_rerun()
+                st.rerun()  # ✅ UPDATED: Changed from st.experimental_rerun()
             else:
                 st.session_state.confirm_delete_all_view = True
                 st.error("Click again to PERMANENTLY delete ALL data")
@@ -91,7 +91,7 @@ def view_expenses_page(exp_mgr, inc_mgr):
             col4.empty()
             if col5.button("❌", key=f"del_exp_{idx}"):
                 exp_mgr.delete_expense(st.session_state.user_email, idx)
-                st.experimental_rerun()
+                st.rerun()  # ✅ UPDATED: Changed from st.experimental_rerun()
     else:
         st.info(f"No expenses logged for {selected_month}.")
 
@@ -104,6 +104,7 @@ def view_expenses_page(exp_mgr, inc_mgr):
             col2.text(row[2])
             if col3.button("❌", key=f"del_inc_{idx}"):
                 inc_mgr.delete_income(st.session_state.user_email, idx)
-                st.experimental_rerun()
+                st.rerun()  # ✅ UPDATED: Changed from st.experimental_rerun()
     else:
         st.info(f"No income logged for {selected_month}.")
+
