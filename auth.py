@@ -1,6 +1,7 @@
 import streamlit as st
 from supabase import Client
 import re
+import hashlib
 
 class AuthManager:
     def __init__(self, supabase_client: Client):
@@ -39,7 +40,7 @@ class AuthManager:
                 return False, message
             
             # Check if user already exists
-            existing_user = self.supabase.table("auth_users").select("email").eq("email", email).execute()
+            existing_user = self.supabase.table("auth_users").select("email").eq("email", email.lower().strip()).execute()
             if existing_user.data:
                 return False, "An account with this email already exists"
             
@@ -47,7 +48,6 @@ class AuthManager:
             user_data = {
                 "email": email.lower().strip(),
                 "password_hash": self._hash_password(password),
-                "created_at": "now()",
                 "is_verified": False
             }
             
@@ -80,7 +80,7 @@ class AuthManager:
                 return False, "Invalid email or password"
             
             # Update last login
-            self.supabase.table("auth_users").update({"last_login": "now()"}).eq("email", email).execute()
+            self.supabase.table("auth_users").update({"last_login": "now()"}).eq("email", email.lower().strip()).execute()
             
             return True, "Login successful!"
             
@@ -89,8 +89,8 @@ class AuthManager:
     
     def _hash_password(self, password):
         """Simple password hashing (use proper hashing in production)"""
-        import hashlib
-        return hashlib.sha256(password.encode()).hexdigest()
+        salt = "neurobux_salt_2025"  # In production, use random salt per user
+        return hashlib.sha256((password + salt).encode()).hexdigest()
     
     def _verify_password(self, password, password_hash):
         """Verify password against hash"""
@@ -99,9 +99,15 @@ class AuthManager:
     def change_password(self, email, old_password, new_password):
         """Change user password"""
         try:
-            # Verify current password
-            login_success, _ = self.login(email, old_password)
-            if not login_success:
+            # Verify current password first
+            user_result = self.supabase.table("auth_users").select("*").eq("email", email.lower().strip()).execute()
+            
+            if not user_result.data:
+                return False, "User not found"
+            
+            user = user_result.data[0]
+            
+            if not self._verify_password(old_password, user["password_hash"]):
                 return False, "Current password is incorrect"
             
             # Validate new password
@@ -111,9 +117,22 @@ class AuthManager:
             
             # Update password
             new_hash = self._hash_password(new_password)
-            self.supabase.table("auth_users").update({"password_hash": new_hash}).eq("email", email).execute()
+            self.supabase.table("auth_users").update({"password_hash": new_hash}).eq("email", email.lower().strip()).execute()
             
             return True, "Password changed successfully!"
             
         except Exception as e:
             return False, f"Password change failed: {str(e)}"
+    
+    def get_user_info(self, email):
+        """Get user information - THIS WAS THE MISSING METHOD"""
+        try:
+            user_result = self.supabase.table("auth_users").select("email, created_at, last_login, is_verified").eq("email", email.lower().strip()).execute()
+            
+            if user_result.data:
+                return user_result.data[0]
+            return None
+            
+        except Exception as e:
+            st.error(f"Error fetching user info: {str(e)}")
+            return None
