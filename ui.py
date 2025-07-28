@@ -2,7 +2,8 @@ import streamlit as st
 from auth import AuthManager
 from database import ExpenseManager, IncomeManager, init_supabase
 from synbot import SynBot
-from pages import login, dashboard, add_transaction, view_expenses, markets, ai_coach, smart_analytics
+from pages.login import login_page
+from pages import dashboard, add_transaction, view_expenses, markets, ai_coach, smart_analytics
 from datetime import datetime
 
 # Page configuration
