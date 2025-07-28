@@ -8,88 +8,28 @@ from datetime import datetime
 def markets_page():
     st.header("📈 Markets")
     
-    # Investment platform links WITH LOGOS
+    # Investment platform links (unchanged)
     INVESTMENT_PLATFORMS = {
         "🇮🇳 India": {
-            "Zerodha": {
-                "url": "https://zerodha.com/",
-                "logo": "https://zerodha.com/static/images/logo.svg",
-                "fallback": "⚡"
-            },
-            "Groww": {
-                "url": "https://groww.in/",
-                "logo": "https://assets.groww.in/web-assets/favicon/favicon-192.png",
-                "fallback": "🌱"
-            },
-            "Angel One": {
-                "url": "https://www.angelone.in/",
-                "logo": "https://www.angelone.in/images/logo.png",
-                "fallback": "👼"
-            },
-            "Upstox": {
-                "url": "https://upstox.com/",
-                "logo": "https://upstox.com/app/themes/upstox/dist/img/logo.svg",
-                "fallback": "📈"
-            },
-            "INDmoney": {
-                "url": "https://www.indmoney.com/",
-                "logo": "https://www.indmoney.com/favicon.ico",
-                "fallback": "💰"
-            }
+            "Zerodha": "https://zerodha.com/",
+            "Groww": "https://groww.in/",
+            "Angel One": "https://www.angelone.in/",
+            "Upstox": "https://upstox.com/",
+            "INDmoney": "https://www.indmoney.com/"
         },
         "🇺🇸 US": {
-            "Robinhood": {
-                "url": "https://www.robinhood.com/",
-                "logo": "https://robinhood.com/us/en/_next/static/images/3x_RH_favicon-39dc52836d0d5fd6bdcc5a0a29d7b42e.png",
-                "fallback": "🏹"
-            },
-            "Public": {
-                "url": "https://public.com/",
-                "logo": "https://public.com/favicon.ico",
-                "fallback": "🏛️"
-            },
-            "M1 Finance": {
-                "url": "https://www.m1.com/",
-                "logo": "https://www.m1.com/favicon.ico",
-                "fallback": "Ⓜ️"
-            },
-            "Fidelity": {
-                "url": "https://www.fidelity.com/",
-                "logo": "https://www.fidelity.com/favicon.ico",
-                "fallback": "🏦"
-            },
-            "Charles Schwab": {
-                "url": "https://www.schwab.com/",
-                "logo": "https://www.schwab.com/favicon.ico",
-                "fallback": "🏛️"
-            }
+            "Robinhood": "https://www.robinhood.com/",
+            "Public": "https://public.com/",
+            "M1 Finance": "https://www.m1.com/",
+            "Fidelity": "https://www.fidelity.com/",
+            "Charles Schwab": "https://www.schwab.com/"
         },
         "Crypto": {
-            "Coinbase": {
-                "url": "https://www.coinbase.com/",
-                "logo": "https://www.coinbase.com/favicon.ico",
-                "fallback": "🪙"
-            },
-            "Binance": {
-                "url": "https://www.binance.com/",
-                "logo": "https://bin.bnbstatic.com/static/images/common/favicon.ico",
-                "fallback": "🔶"
-            },
-            "WazirX": {
-                "url": "https://wazirx.com/",
-                "logo": "https://wazirx.com/favicon.ico",
-                "fallback": "🇮🇳"
-            },
-            "CoinDCX": {
-                "url": "https://coindcx.com/",
-                "logo": "https://coindcx.com/favicon.ico",
-                "fallback": "💎"
-            },
-            "Kraken": {
-                "url": "https://www.kraken.com/",
-                "logo": "https://www.kraken.com/favicon.ico",
-                "fallback": "🐙"
-            }
+            "Coinbase": "https://www.coinbase.com/",
+            "Binance": "https://www.binance.com/",
+            "WazirX": "https://wazirx.com/",
+            "CoinDCX": "https://coindcx.com/",
+            "Kraken": "https://www.kraken.com/"
         }
     }
     
@@ -128,25 +68,6 @@ def markets_page():
                 return False, "❌ Rate limited by Yahoo Finance. Please wait a few minutes."
             else:
                 return False, f"❌ Connection failed: {str(e)}"
-    
-    # Function to display platform with logo
-    def display_platform_button(platform_name, platform_data, key_suffix=""):
-        """Display platform button with logo and fallback"""
-        col1, col2 = st.columns([1, 4])
-        
-        with col1:
-            try:
-                st.image(platform_data["logo"], width=40)
-            except:
-                st.markdown(f"### {platform_data['fallback']}")
-        
-        with col2:
-            if st.button(f"{platform_name}", key=f"platform_{platform_name}_{key_suffix}", use_container_width=True):
-                st.success(f"🚀 Opening {platform_name}...")
-                st.markdown(f'<a href="{platform_data["url"]}" target="_blank">🔗 Open {platform_name}</a>', unsafe_allow_html=True)
-                st.balloons()
-                return True
-        return False
     
     # Test connection with improved handling
     with st.spinner("Checking market data availability..."):
@@ -198,9 +119,11 @@ def markets_page():
             platforms = INVESTMENT_PLATFORMS[region]
             
             cols = st.columns(len(platforms))
-            for idx, (platform_name, platform_data) in enumerate(platforms.items()):
+            for idx, (platform_name, platform_url) in enumerate(platforms.items()):
                 with cols[idx]:
-                    display_platform_button(platform_name, platform_data, "offline")
+                    if st.button(f"📱 {platform_name}", key=f"invest_offline_{platform_name}"):
+                        st.success(f"🚀 Opening {platform_name}...")
+                        st.markdown(f'<a href="{platform_url}" target="_blank">🔗 Open {platform_name}</a>', unsafe_allow_html=True)
             
             return  # Exit early if connection fails
 
@@ -217,7 +140,7 @@ def markets_page():
     region = st.selectbox("Pick region / asset class", list(universe.keys()))
     symbols = universe[region]
     
-    # Investment platforms section with logos
+    # Investment platforms section
     st.markdown("---")
     st.subheader(f"💰 Start Investing in {region}")
     
@@ -227,30 +150,12 @@ def markets_page():
     
     platforms = INVESTMENT_PLATFORMS.get(platform_key, INVESTMENT_PLATFORMS["🇺🇸 US"])
     
-    # Enhanced platform display with logos
     cols = st.columns(len(platforms))
-    for idx, (platform_name, platform_data) in enumerate(platforms.items()):
+    for idx, (platform_name, platform_url) in enumerate(platforms.items()):
         with cols[idx]:
-            # Platform card with logo
-            with st.container():
-                # Logo and name section
-                st.markdown(f"""
-                <div style='text-align: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; margin: 5px 0;'>
-                """, unsafe_allow_html=True)
-                
-                try:
-                    st.image(platform_data["logo"], width=50)
-                except:
-                    st.markdown(f"## {platform_data['fallback']}")
-                
-                st.markdown(f"**{platform_name}**")
-                
-                if st.button(f"Open {platform_name}", key=f"invest_{platform_name}_main", use_container_width=True, type="primary"):
-                    st.success(f"🚀 Opening {platform_name}...")
-                    st.markdown(f'<a href="{platform_data["url"]}" target="_blank">🔗 Open {platform_name}</a>', unsafe_allow_html=True)
-                    st.balloons()
-                
-                st.markdown("</div>", unsafe_allow_html=True)
+            if st.button(f"📱 {platform_name}", key=f"invest_{platform_name}"):
+                st.success(f"🚀 Opening {platform_name}...")
+                st.markdown(f'<a href="{platform_url}" target="_blank">🔗 Open {platform_name}</a>', unsafe_allow_html=True)
     
     # Create tabs with rate-limited data fetching
     symbol_names = [s.replace(".NS", "").replace(".T", "").replace("^", "").replace("-USD", "").replace("=F", "") for s in symbols]
@@ -325,27 +230,19 @@ def markets_page():
                 col3.metric("High", f"{currency}{latest.High:.2f}")
                 col4.metric("Low", f"{currency}{latest.Low:.2f}")
                 
-                # Investment buttons with logos
+                # Investment buttons
                 st.markdown("---")
-                st.subheader(f"💳 Ready to Invest in {sym}?")
+                st.subheader(f"💳 Invest in {sym}")
                 
                 invest_cols = st.columns(3)
                 top_platforms = list(platforms.items())[:3]
                 
-                for idx, (platform_name, platform_data) in enumerate(top_platforms):
+                for idx, (platform_name, platform_url) in enumerate(top_platforms):
                     with invest_cols[idx]:
-                        # Small logo above button
-                        try:
-                            st.image(platform_data["logo"], width=30)
-                        except:
-                            st.markdown(f"### {platform_data['fallback']}")
-                        
-                        st.markdown(f"**{platform_name}**")
-                        
-                        if st.button(f"Buy on {platform_name}", key=f"buy_{sym}_{platform_name}", type="primary", use_container_width=True):
+                        if st.button(f"🛒 Buy on {platform_name}", key=f"buy_{sym}_{platform_name}"):
                             st.balloons()
-                            st.success(f"🎯 Opening {platform_name} to invest in {sym}")
-                            st.markdown(f'<a href="{platform_data["url"]}" target="_blank">🔗 Open {platform_name}</a>', unsafe_allow_html=True)
+                            st.success(f"🎯 Opening {platform_name} for {sym}")
+                            st.markdown(f'<a href="{platform_url}" target="_blank">🔗 Open {platform_name}</a>', unsafe_allow_html=True)
             
             elif error == "Rate limited":
                 st.error(f"❌ Rate limited while fetching {sym} data")
