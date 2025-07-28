@@ -15,7 +15,7 @@ def login_page(auth):
                     st.session_state.logged_in = True
                     st.session_state.user_email = email
                     st.session_state.page = "🏠 Dashboard"
-                   
+                    st.rerun()  # ✅ UPDATED: Changed from st.experimental_rerun()
                 else:
                     st.error("Invalid credentials")
 
