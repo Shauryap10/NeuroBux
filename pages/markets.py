@@ -7,6 +7,31 @@ import pandas as pd
 def markets_page():
     st.header("📈 Markets")
     
+    # Investment platform links
+    INVESTMENT_PLATFORMS = {
+        "🇮🇳 India": {
+            "Zerodha": "https://zerodha.com/",
+            "Groww": "https://groww.in/",
+            "Angel One": "https://www.angelone.in/",
+            "Upstox": "https://upstox.com/",
+            "INDmoney": "https://www.indmoney.com/"
+        },
+        "🇺🇸 US": {
+            "Robinhood": "https://www.robinhood.com/",
+            "Public": "https://public.com/",
+            "M1 Finance": "https://www.m1.com/",
+            "Fidelity": "https://www.fidelity.com/",
+            "Charles Schwab": "https://www.schwab.com/"
+        },
+        "Crypto": {
+            "Coinbase": "https://www.coinbase.com/",
+            "Binance": "https://www.binance.com/",
+            "WazirX": "https://wazirx.com/",
+            "CoinDCX": "https://coindcx.com/",
+            "Kraken": "https://www.kraken.com/"
+        }
+    }
+    
     # Show connection status
     with st.spinner("Loading market data..."):
         # Test connection first
@@ -34,6 +59,33 @@ def markets_page():
     
     region = st.selectbox("Pick region / asset class", list(universe.keys()))
     symbols = universe[region]
+    
+    # Investment platforms section for selected region
+    st.markdown("---")
+    st.subheader(f"💰 Start Investing in {region}")
+    
+    # Get appropriate platforms
+    platform_key = region
+    if region == "🇪🇺 EU" or region == "🇯🇵 JP" or region == "Commodities":
+        platform_key = "🇺🇸 US"  # Use US platforms for international markets
+    
+    platforms = INVESTMENT_PLATFORMS.get(platform_key, INVESTMENT_PLATFORMS["🇺🇸 US"])
+    
+    # Display investment platform buttons
+    cols = st.columns(len(platforms))
+    for idx, (platform_name, platform_url) in enumerate(platforms.items()):
+        with cols[idx]:
+            if st.button(f"📱 {platform_name}", key=f"invest_{platform_name}", use_container_width=True):
+                st.success(f"🚀 Opening {platform_name}...")
+                st.markdown(f'<a href="{platform_url}" target="_blank">🔗 Click here if not redirected automatically</a>', unsafe_allow_html=True)
+                # JavaScript redirect
+                st.components.v1.html(f"""
+                <script>
+                window.open('{platform_url}', '_blank');
+                </script>
+                """, height=0)
+    
+    st.caption("💡 Click any platform above to start investing. Links open in new tab.")
     
     # Create tabs
     symbol_names = []
@@ -141,6 +193,27 @@ def markets_page():
                                 if hasattr(latest, 'Volume') and latest.Volume > 0:
                                     st.info(f"📊 Volume: {latest.Volume:,.0f}")
                                 
+                                # Investment action buttons for individual stocks
+                                st.markdown("---")
+                                st.subheader(f"💳 Ready to Invest in {sym}?")
+                                
+                                # Show top 3 platforms for quick access
+                                invest_cols = st.columns(3)
+                                top_platforms = list(platforms.items())[:3]
+                                
+                                for idx, (platform_name, platform_url) in enumerate(top_platforms):
+                                    with invest_cols[idx]:
+                                        if st.button(f"🛒 Buy on {platform_name}", key=f"buy_{sym}_{platform_name}", type="primary"):
+                                            st.balloons()  # Celebration animation
+                                            st.success(f"🎯 Opening {platform_name} to invest in {sym}")
+                                            st.markdown(f'<a href="{platform_url}" target="_blank">🔗 Click here to open {platform_name}</a>', unsafe_allow_html=True)
+                                            # JavaScript redirect
+                                            st.components.v1.html(f"""
+                                            <script>
+                                            window.open('{platform_url}', '_blank');
+                                            </script>
+                                            """, height=0)
+                                
                                 st.caption(f"📅 Data period: {period} | Interval: {interval} | Last updated: {latest.name.strftime('%Y-%m-%d %H:%M') if hasattr(latest.name, 'strftime') else 'N/A'}")
                                 
                                 data_found = True
@@ -185,17 +258,17 @@ def markets_page():
                     except:
                         st.write("**Basic info:** Not available")
 
-    # Manual search section
+    # Manual search section with investment options
     st.markdown("---")
-    st.subheader("🔍 Manual Symbol Search")
+    st.subheader("🔍 Search & Invest")
     
     col1, col2 = st.columns([3, 1])
     
     with col1:
         search_symbol = st.text_input(
-            "Enter any stock symbol",
+            "Search any stock to invest",
             placeholder="e.g., RELIANCE.NS, AAPL, BTC-USD",
-            help="Use .NS for Indian stocks (RELIANCE.NS), -USD for crypto (BTC-USD)"
+            help="Search any symbol and get investment options"
         )
     
     with col2:
@@ -229,6 +302,31 @@ def markets_page():
                     col2.metric("Change", f"{change:+.2f}%")
                     col3.metric("Period", period.upper())
                     
+                    # Investment options for searched symbol
+                    st.markdown("---")
+                    st.subheader(f"🚀 Invest in {symbol}")
+                    
+                    # Determine appropriate platforms based on symbol
+                    if ".NS" in symbol:
+                        relevant_platforms = INVESTMENT_PLATFORMS["🇮🇳 India"]
+                    elif "USD" in symbol and any(crypto in symbol for crypto in ["BTC", "ETH", "SOL"]):
+                        relevant_platforms = INVESTMENT_PLATFORMS["Crypto"]
+                    else:
+                        relevant_platforms = INVESTMENT_PLATFORMS["🇺🇸 US"]
+                    
+                    platform_cols = st.columns(len(relevant_platforms))
+                    for idx, (name, url) in enumerate(relevant_platforms.items()):
+                        with platform_cols[idx]:
+                            if st.button(f"📈 {name}", key=f"search_invest_{name}_{symbol}"):
+                                st.success(f"🎯 Opening {name} to invest in {symbol}")
+                                st.markdown(f'<a href="{url}" target="_blank">🔗 Open {name}</a>', unsafe_allow_html=True)
+                                # JavaScript redirect
+                                st.components.v1.html(f"""
+                                <script>
+                                window.open('{url}', '_blank');
+                                </script>
+                                """, height=0)
+                    
                     break
             else:
                 st.error(f"❌ No data found for {symbol}")
@@ -237,6 +335,16 @@ def markets_page():
         except Exception as e:
             st.error(f"Search failed: {str(e)}")
 
-    # Footer with status
+    # Investment disclaimer
     st.markdown("---")
+    st.warning("""
+    ⚠️ **Investment Disclaimer:** 
+    - All investments carry risk and may lose value
+    - Past performance doesn't guarantee future results  
+    - Please research thoroughly before investing
+    - Consider consulting a financial advisor
+    - NeuroBux is not responsible for investment decisions
+    """)
+
+    # Footer with status
     st.caption("💡 If you're seeing 'No data' errors, try switching to US stocks or crypto which have more reliable data availability.")
