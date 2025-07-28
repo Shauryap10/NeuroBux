@@ -132,7 +132,7 @@ def dashboard_page(exp_mgr, inc_mgr):
                 inc_mgr.reset_current_month(st.session_state.user_email)
                 st.success("✅ Current month's data has been reset!")
                 st.session_state.confirm_reset_month = False
-                st.experimental_rerun()
+                st.rerun()  # ✅ UPDATED: Changed from st.experimental_rerun()
             else:
                 st.session_state.confirm_reset_month = True
                 st.warning("⚠️ Click again to confirm reset of current month's data")
@@ -144,7 +144,7 @@ def dashboard_page(exp_mgr, inc_mgr):
                 inc_mgr.delete_all_user_data(st.session_state.user_email)
                 st.success("✅ All data has been permanently deleted!")
                 st.session_state.confirm_delete_all = False
-                st.experimental_rerun()
+                st.rerun()  # ✅ UPDATED: Changed from st.experimental_rerun()
             else:
                 st.session_state.confirm_delete_all = True
                 st.error("🚨 Click again to PERMANENTLY delete ALL your data")
