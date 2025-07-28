@@ -76,7 +76,7 @@ def main_app():
         st.session_state.logged_in = False
         st.session_state.user_email = ""
         st.session_state.page = "🏠 Dashboard"
-        st.experimental_rerun()
+        st.rerun()  # ✅ UPDATED: Changed from st.experimental_rerun()
 
     # Render the selected page
     pages[st.session_state.page]()
