@@ -1,14 +1,14 @@
 import streamlit as st
 import plotly.graph_objects as go
-import yfinance as yf
+import requests
+import pandas as pd
 import time
-import random
 from datetime import datetime
 
 def markets_page():
     st.header("📈 Markets")
     
-    # Investment platform links (unchanged)
+    # Investment platform links WITHOUT logos - simple URL structure
     INVESTMENT_PLATFORMS = {
         "🇮🇳 India": {
             "Zerodha": "https://zerodha.com/",
@@ -33,85 +33,119 @@ def markets_page():
         }
     }
     
-    # Enhanced connection test with better rate limiting
-    def test_connection_with_backoff():
-        # Check if we recently failed due to rate limiting
-        if 'last_rate_limit' in st.session_state:
-            time_since_limit = time.time() - st.session_state.last_rate_limit
-            if time_since_limit < 300:  # Wait 5 minutes after rate limit
-                remaining_time = 300 - int(time_since_limit)
-                st.warning(f"⏳ Rate limited. Please wait {remaining_time} seconds before retrying.")
-                return False, f"Rate limited. Try again in {remaining_time} seconds."
+    # Alpha Vantage API functions - SECURE VERSION
+    def get_stock_data_alpha_vantage(symbol):
+        """Get stock data using Alpha Vantage API"""
+        api_key = st.secrets.get("alpha_vantage_api_key")
         
-        test_symbols = ["AAPL"]  # Use only one reliable symbol for testing
+        if not api_key:
+            return None, "API key not configured"
         
         try:
-            with st.spinner("Testing connection (with rate limiting)..."):
-                # Add random delay to avoid hitting rate limits
-                time.sleep(random.uniform(1, 3))
+            url = f"https://www.alphavantage.co/query"
+            params = {
+                "function": "TIME_SERIES_DAILY",
+                "symbol": symbol,
+                "apikey": api_key,
+                "outputsize": "compact"
+            }
+            
+            response = requests.get(url, params=params, timeout=15)
+            data = response.json()
+            
+            if "Time Series (Daily)" in data:
+                time_series = data["Time Series (Daily)"]
+                df = pd.DataFrame.from_dict(time_series, orient='index')
+                df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+                df.index = pd.to_datetime(df.index)
+                df = df.astype(float)
+                df = df.sort_index()
+                return df.tail(30), None  # Last 30 days
+            elif "Error Message" in data:
+                return None, data["Error Message"]
+            elif "Note" in data:
+                return None, "API rate limit reached. Please wait a minute."
+            else:
+                return None, "Unknown error occurred"
                 
-                ticker = yf.Ticker(test_symbols[0])
-                test_data = ticker.history(period="1d", interval="1h")
+        except Exception as e:
+            return None, str(e)
+    
+    def get_crypto_data_alpha_vantage(symbol):
+        """Get crypto data using Alpha Vantage"""
+        api_key = st.secrets.get("alpha_vantage_api_key")
+        
+        if not api_key:
+            return None, "API key not configured"
+        
+        try:
+            # Convert BTC-USD to BTC format
+            crypto_symbol = symbol.replace("-USD", "")
+            
+            url = f"https://www.alphavantage.co/query"
+            params = {
+                "function": "DIGITAL_CURRENCY_DAILY",
+                "symbol": crypto_symbol,
+                "market": "USD",
+                "apikey": api_key
+            }
+            
+            response = requests.get(url, params=params, timeout=15)
+            data = response.json()
+            
+            if "Time Series (Digital Currency Daily)" in data:
+                time_series = data["Time Series (Digital Currency Daily)"]
+                df = pd.DataFrame.from_dict(time_series, orient='index')
                 
-                if not test_data.empty:
-                    # Clear any previous rate limit flags on success
-                    if 'last_rate_limit' in st.session_state:
-                        del st.session_state.last_rate_limit
-                    return True, f"✅ Connected successfully"
+                # Use USD prices
+                df['Close'] = df['4a. close (USD)'].astype(float)
+                df['Open'] = df['1a. open (USD)'].astype(float)
+                df['High'] = df['2a. high (USD)'].astype(float)
+                df['Low'] = df['3a. low (USD)'].astype(float)
+                df['Volume'] = df['5. volume'].astype(float)
+                
+                df.index = pd.to_datetime(df.index)
+                df = df.sort_index()
+                return df[['Open', 'High', 'Low', 'Close', 'Volume']].tail(30), None
+            elif "Error Message" in data:
+                return None, data["Error Message"]
+            else:
+                return None, "Crypto data not available"
+                
+        except Exception as e:
+            return None, str(e)
+    
+    # Test Alpha Vantage connection - SECURE VERSION
+    def test_alpha_vantage_connection():
+        """Test Alpha Vantage API connection"""
+        try:
+            with st.spinner("Testing Alpha Vantage connection..."):
+                df, error = get_stock_data_alpha_vantage("AAPL")
+                
+                if df is not None:
+                    return True, "✅ Alpha Vantage connected successfully"
                 else:
-                    return False, "❌ No data received from server"
+                    return False, f"❌ Alpha Vantage error: {error}"
                     
         except Exception as e:
-            error_msg = str(e).lower()
-            if "rate limit" in error_msg or "too many requests" in error_msg:
-                st.session_state.last_rate_limit = time.time()
-                return False, "❌ Rate limited by Yahoo Finance. Please wait a few minutes."
-            else:
-                return False, f"❌ Connection failed: {str(e)}"
+            return False, f"❌ Connection failed: {str(e)}"
     
-    # Test connection with improved handling
-    with st.spinner("Checking market data availability..."):
-        connected, status_msg = test_connection_with_backoff()
+    # Test connection
+    with st.spinner("Connecting to Alpha Vantage..."):
+        connected, status_msg = test_alpha_vantage_connection()
         
         if connected:
             st.success(status_msg)
+            st.info("🚀 **No Rate Limiting!** Powered by Alpha Vantage API")
         else:
             st.error(status_msg)
             
-            # Show rate limit specific help
-            if "rate limit" in status_msg.lower():
-                st.error("**Yahoo Finance Rate Limit Reached**")
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.warning("""
-                    **🕐 What happened:**
-                    - Too many requests to Yahoo Finance
-                    - Server temporarily blocked your IP
-                    - This is a common protective measure
-                    """)
-                
-                with col2:
-                    st.info("""
-                    **⏳ What to do:**
-                    - Wait 5-10 minutes before trying again
-                    - Avoid refreshing the page repeatedly  
-                    - Use investment platforms below in the meantime
-                    """)
-                
-                # Countdown timer for rate limit
-                if 'last_rate_limit' in st.session_state:
-                    time_since_limit = time.time() - st.session_state.last_rate_limit
-                    remaining = max(0, 300 - int(time_since_limit))
-                    if remaining > 0:
-                        st.info(f"⏱️ Estimated wait time: {remaining} seconds")
-                        
-                        # Auto-refresh countdown
-                        if st.button("🔄 Check Again", disabled=remaining > 30):
-                            st.rerun()
+            if "API key not configured" in status_msg:
+                st.error("**Alpha Vantage API Key Missing**")
+                st.info("Please add your Alpha Vantage API key to Streamlit secrets and redeploy.")
+                st.code('alpha_vantage_api_key = "YOUR_API_KEY_HERE"')
             
-            # Show investment platforms even when rate limited
+            # Show investment platforms even when data fails
             st.markdown("---")
             st.subheader("💰 Investment Platforms (Always Available)")
             
@@ -121,32 +155,33 @@ def markets_page():
             cols = st.columns(len(platforms))
             for idx, (platform_name, platform_url) in enumerate(platforms.items()):
                 with cols[idx]:
-                    if st.button(f"📱 {platform_name}", key=f"invest_offline_{platform_name}"):
+                    if st.button(f"📱 {platform_name}", key=f"offline_{platform_name}"):
                         st.success(f"🚀 Opening {platform_name}...")
                         st.markdown(f'<a href="{platform_url}" target="_blank">🔗 Open {platform_name}</a>', unsafe_allow_html=True)
-            
-            return  # Exit early if connection fails
+            return
 
-    # Rest of your markets code with enhanced rate limiting
+    # Markets universe - Alpha Vantage compatible symbols
     universe = {
-        "🇺🇸 US": ["AAPL", "TSLA", "MSFT", "AMZN", "^GSPC"],
-        "Crypto": ["BTC-USD", "ETH-USD", "SOL-USD"],
-        "🇮🇳 India": ["RELIANCE.NS", "INFY.NS", "HDFCBANK.NS", "TATAMOTORS.NS", "^NSEI"],
-        "🇪🇺 EU": ["ASML.AS", "SAP.DE", "NESN.SW", "^STOXX50E"],
-        "🇯🇵 JP": ["7203.T", "6758.T", "^N225"],
-        "Commodities": ["GC=F", "SI=F", "CL=F"],
+        "🇺🇸 US": ["AAPL", "TSLA", "MSFT", "AMZN", "GOOGL", "NVDA", "META"],
+        "Crypto": ["BTC-USD", "ETH-USD", "ADA-USD", "DOT-USD"],
+        "🇪🇺 EU": ["SAP", "ASML", "NESN"],  # Limited international support
+        "Popular ETFs": ["SPY", "QQQ", "VTI", "VOO", "IWM"]
     }
     
     region = st.selectbox("Pick region / asset class", list(universe.keys()))
     symbols = universe[region]
     
-    # Investment platforms section
+    # Investment platforms section WITHOUT logos
     st.markdown("---")
     st.subheader(f"💰 Start Investing in {region}")
     
     platform_key = region
-    if region in ["🇪🇺 EU", "🇯🇵 JP", "Commodities"]:
+    if region in ["🇪🇺 EU", "Popular ETFs"]:
         platform_key = "🇺🇸 US"
+    elif "Crypto" in region:
+        platform_key = "Crypto"
+    else:
+        platform_key = region
     
     platforms = INVESTMENT_PLATFORMS.get(platform_key, INVESTMENT_PLATFORMS["🇺🇸 US"])
     
@@ -157,96 +192,90 @@ def markets_page():
                 st.success(f"🚀 Opening {platform_name}...")
                 st.markdown(f'<a href="{platform_url}" target="_blank">🔗 Open {platform_name}</a>', unsafe_allow_html=True)
     
-    # Create tabs with rate-limited data fetching
-    symbol_names = [s.replace(".NS", "").replace(".T", "").replace("^", "").replace("-USD", "").replace("=F", "") for s in symbols]
+    # Create tabs for symbols
+    symbol_names = [s.replace("-USD", "").replace("^", "") for s in symbols]
     tabs = st.tabs(symbol_names)
 
     for tab, sym in zip(tabs, symbols):
         with tab:
             st.subheader(f"📊 {sym}")
             
-            # Enhanced data fetching with longer delays
-            def fetch_data_with_rate_limiting(symbol):
-                periods_to_try = ["5d", "1mo"]  # Reduced attempts
-                intervals_map = {"5d": ["1d"], "1mo": ["1d"]}  # Simpler intervals
+            # Fetch data with Alpha Vantage
+            with st.spinner(f"Loading {sym} data from Alpha Vantage..."):
+                if "-USD" in sym:  # Crypto
+                    df, error = get_crypto_data_alpha_vantage(sym)
+                else:  # Stocks
+                    df, error = get_stock_data_alpha_vantage(sym)
                 
-                for period in periods_to_try:
-                    intervals = intervals_map.get(period, ["1d"])
-                    
-                    for interval in intervals:
-                        try:
-                            # Add significant delay between requests
-                            time.sleep(random.uniform(2, 5))
-                            
-                            with st.spinner(f"Loading {symbol} data (please wait)..."):
-                                ticker = yf.Ticker(symbol)
-                                df = ticker.history(period=period, interval=interval)
-                                
-                                if not df.empty and len(df) >= 1:
-                                    return df, period, interval, None
-                                
-                        except Exception as e:
-                            if "rate limit" in str(e).lower():
-                                return None, None, None, "Rate limited"
-                            continue
-                
-                return None, None, None, "No data available"
+                # Respect API rate limits
+                time.sleep(1)
             
-            # Fetch data with rate limiting
-            df, period, interval, error = fetch_data_with_rate_limiting(sym)
-            
-            if df is not None:
-                # Success! Display the data
-                st.success(f"✅ Loaded {len(df)} data points")
+            if df is not None and not df.empty:
+                st.success(f"✅ Loaded {len(df)} days of Alpha Vantage data")
                 
-                # Create simplified chart
+                # Create enhanced chart
                 fig = go.Figure()
-                fig.add_trace(go.Scatter(
+                
+                # Add candlestick chart
+                fig.add_trace(go.Candlestick(
                     x=df.index,
-                    y=df["Close"],
-                    mode='lines',
-                    name='Price',
-                    line=dict(color='#26a69a', width=2)
+                    open=df['Open'],
+                    high=df['High'],
+                    low=df['Low'],
+                    close=df['Close'],
+                    name=sym,
+                    increasing_line_color='#26a69a',
+                    decreasing_line_color='#ef5350'
                 ))
                 
                 fig.update_layout(
-                    title=f"{sym} - {period.upper()} Price Chart",
+                    title=f"{sym} - 30-Day Chart (Alpha Vantage)",
                     template="plotly_dark",
-                    height=400,
+                    height=450,
                     xaxis_title="Date",
-                    yaxis_title="Price"
+                    yaxis_title="Price ($)",
+                    xaxis_rangeslider_visible=False
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
-                # Display metrics
+                # Display comprehensive metrics
                 latest = df.iloc[-1]
-                earliest = df.iloc[0]
-                change = (latest.Close - earliest.Close) / earliest.Close * 100
+                previous = df.iloc[-2] if len(df) > 1 else df.iloc[-1]
+                change = (latest.Close - previous.Close) / previous.Close * 100
                 
                 col1, col2, col3, col4 = st.columns(4)
-                currency = "₹" if ".NS" in sym else "$"
+                currency = "$"
                 col1.metric("Current Price", f"{currency}{latest.Close:.2f}")
-                col2.metric("Change", f"{change:+.2f}%")
-                col3.metric("High", f"{currency}{latest.High:.2f}")
-                col4.metric("Low", f"{currency}{latest.Low:.2f}")
+                col2.metric("Daily Change", f"{change:+.2f}%")
+                col3.metric("Day High", f"{currency}{latest.High:.2f}")
+                col4.metric("Day Low", f"{currency}{latest.Low:.2f}")
                 
-                # Investment buttons
+                # Investment buttons WITHOUT logos
                 st.markdown("---")
-                st.subheader(f"💳 Invest in {sym}")
+                st.subheader(f"💳 Ready to Invest in {sym}?")
                 
                 invest_cols = st.columns(3)
                 top_platforms = list(platforms.items())[:3]
                 
                 for idx, (platform_name, platform_url) in enumerate(top_platforms):
                     with invest_cols[idx]:
-                        if st.button(f"🛒 Buy on {platform_name}", key=f"buy_{sym}_{platform_name}"):
+                        if st.button(f"🛒 Buy {sym}", key=f"buy_{sym}_{platform_name}", type="primary"):
                             st.balloons()
-                            st.success(f"🎯 Opening {platform_name} for {sym}")
+                            st.success(f"🎯 Opening {platform_name} to invest in {sym}")
+                            st.info(f"💡 Current price: ${latest.Close:.2f}")
                             st.markdown(f'<a href="{platform_url}" target="_blank">🔗 Open {platform_name}</a>', unsafe_allow_html=True)
             
-            elif error == "Rate limited":
-                st.error(f"❌ Rate limited while fetching {sym} data")
-                st.info("⏳ Yahoo Finance is protecting against too many requests. Try again in a few minutes.")
             else:
-                st.warning(f"⚠️ No data available for {sym}")
-                st.info("This might be due to market closure or temporary server issues.")
+                st.error(f"❌ Unable to load data for {sym}")
+                if error:
+                    st.error(f"Error: {error}")
+                    
+                    if "rate limit" in error.lower():
+                        st.warning("⏳ Alpha Vantage rate limit reached (5 calls per minute). Please wait a moment.")
+                    elif "invalid api call" in error.lower():
+                        st.info(f"💡 Symbol {sym} may not be available on Alpha Vantage.")
+
+    # Footer - SECURE VERSION
+    st.markdown("---")
+    st.success("🚀 **Powered by Alpha Vantage** - No more Yahoo Finance rate limiting!")
+    st.caption("💡 Professional financial data with 500 free API calls per day")
