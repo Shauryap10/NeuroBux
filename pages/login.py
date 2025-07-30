@@ -108,7 +108,7 @@ def login_page(auth):
                     if success:
                         st.success("🎉 " + message)
                         st.success("🎯 **Next Steps:**\n1. Switch to the Login tab\n2. Enter your email and password\n3. Start tracking your finances!")
-                        st.balloons()
+                      
                     else:
                         st.error("❌ " + message)
                         if "already exists" in message:
