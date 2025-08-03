@@ -6,68 +6,76 @@ from pages.login import login_page
 from pages import dashboard, add_transaction, view_expenses, markets, ai_coach, smart_analytics
 from datetime import datetime
 
-# ===== THEME & GLOW CSS =====
+# ===== THEME & GLOW CSS: RED, SUBTLE =====
 st.markdown("""
 <style>
 body, .stApp {background-color: #18192A !important; color: #f5f5f7 !important;}
 [data-testid="stSidebar"] {background-color: #23243A !important; color: #f5f5f7 !important;}
-/* Glow effect for Neurobux app title and all sidebar nav */
 h1, .neurobux-glow {
-    color: #26a69a !important;
+    color: #e74c3c !important;
     text-shadow:
-        0 0 5px #26a69a,
-        0 0 10px #26a69a,
-        0 0 15px #26a69a,
-        0 0 25px #ffffff;
+        0 0 1.5px #e74c3c,
+        0 0 3px #e74c3c80;
 }
 .stSidebar [data-testid="stSidebarNav"] span,
 .stSidebar .sidebar-user-info,
 .stSidebar [data-testid="stSidebarNav"] button,
 .stSidebar h2, .stSidebar h3, .stSidebar h4, .stSidebar h5, .stSidebar h6 {
-    color: #26a69a !important;
+    color: #e74c3c !important;
     text-shadow:
-        0 0 6px #26a69a,
-        0 0 13px #26a69a,
-        0 0 18px #26a69a;
+        0 0 1px #e74c3c,
+        0 0 2.5px #e74c3c50 !important;
     font-weight: bold !important;
 }
-.stSidebar * {text-shadow: 0 0 3px #26a69a90, 0 0 7px #26a69a50;}
+.stSidebar * {
+    text-shadow: 0 0 1px #e74c3c30;
+}
 .stSidebar button, .stSidebar .stButton>button {
-    color: #26a69a !important;
-    text-shadow: 0 0 5px #26a69a, 0 0 10px #26a69a;
+    color: #e74c3c !important;
+    text-shadow: 0 0 1.5px #e74c3c50;
     font-weight: 600 !important;
 }
 .stSidebar button:hover, .stSidebar .stButton>button:hover {
-    filter: brightness(1.15) drop-shadow(0 0 10px #ffffff40);
+    filter: brightness(1.08) drop-shadow(0 0 3px #fff2);
 }
 .stButton>button {
-    background-color: #26a69a !important;
+    background-color: #e74c3c !important;
     color: white !important;
     border-radius: 6px !important;
 }
 .stButton>button:hover {
-    background-color: #1f8e7e !important;
+    background-color: #bb392b !important;
 }
-/* Custom metric, input, header, and misc style overrides */
-.stMetric-label   {color: #bfc8d9 !important;}
+.stMetric-label   {color: #f47464 !important;}
 .stMetric-value   {color: #f5f5f7 !important;}
-.stTextInput>div>div>input {background-color: #23243A !important; color: #f5f5f7 !important; border-radius: 8px !important;}
-div[data-testid="stTabs"] > div {background-color: #23243A !important; color: #f5f5f7 !important; border-radius: 10px !important;}
+.stTextInput>div>div>input {
+    background-color: #23243A !important;
+    color: #f5f5f7 !important;
+    border-radius: 8px !important;
+}
+div[data-testid="stTabs"] > div {
+    background-color: #23243A !important;
+    color: #f5f5f7 !important;
+    border-radius: 10px !important;
+}
 div[data-testid="stTabs"] > div > button {
-    color: #bfc8d9 !important; background-color: #23243A !important; border: none !important; font-weight: 600 !important;
+    color: #e74c3c !important;
+    background-color: #23243A !important;
+    border: none !important;
+    font-weight: 600 !important;
 }
 div[data-testid="stTabs"] > div > button:focus, 
 div[data-testid="stTabs"] > div > button:hover, 
 div[data-testid="stTabs"] > div > button[aria-selected="true"] {
-    color: #26a69a !important; background-color: transparent !important;
+    color: #e74c3c !important;
+    background-color: transparent !important;
 }
-h1, h2, h3, h4 {color: #26a69a !important; font-weight: 700 !important;}
-hr {border-color: #26a69a !important; opacity: 0.2 !important;}
+h1, h2, h3, h4 {color: #e74c3c !important; font-weight: 700 !important;}
+hr {border-color: #e74c3c !important; opacity: 0.16 !important;}
 </style>
 """, unsafe_allow_html=True)
 # ===== END THEME & GLOW CSS =====
 
-# PAGE CONFIG
 st.set_page_config(
     page_title="NeuroBux - AI Finance Tracker",
     page_icon="💰",
@@ -75,11 +83,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# === SESSION STATE SETUP ===
+# SESSION STATE SETUP
 for key, default in {
-    "logged_in": False, 
-    "user_email": "", 
-    "page": "🏠 Dashboard", 
+    "logged_in": False,
+    "user_email": "",
+    "page": "🏠 Dashboard",
     "selected_month": None,
     "confirm_reset_month": False,
     "confirm_delete_all": False,
@@ -90,7 +98,7 @@ for key, default in {
     if key not in st.session_state:
         st.session_state[key] = default
 
-# === INIT DATABASE + AUTH ===
+# INIT DATABASE + AUTH
 supabase = init_supabase()
 if not supabase:
     st.error("❌ Database connection failed. Please check your Supabase configuration.")
@@ -122,10 +130,9 @@ def test_database_connection():
         return False, f"❌ Database connection failed: {str(e)}"
 
 def main_app():
-    # === SIDEBAR: APP TITLE with GLOW ===
+    # Sidebar: Glowing Neurobux title
     st.sidebar.markdown('<h2 class="neurobux-glow">💰 Neurobux</h2>', unsafe_allow_html=True)
 
-    # === SIDEBAR: USER INFO ===
     st.sidebar.markdown(f"""
     <div class="sidebar-user-info">
         <p><strong>👤 Logged in as:</strong></p>
@@ -133,13 +140,11 @@ def main_app():
     </div>
     """, unsafe_allow_html=True)
 
-    # === SIDEBAR NAVIGATION: GLOW APPLIES AUTOMATICALLY ===
     st.sidebar.markdown("### 📊 Navigation")
     for label, func in pages.items():
         if st.sidebar.button(label, key=label, use_container_width=True):
             st.session_state.page = label
 
-    # === SIDEBAR TOOLS SECTION ===
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🛠️ Tools")
     if st.sidebar.button("🔍 Test Database", help="Check database connection status"):
@@ -168,14 +173,12 @@ def main_app():
         st.sidebar.success("👋 Successfully logged out!")
         st.rerun()
 
-    # === MAIN PAGE CONTENT ===
     try:
         pages[st.session_state.page]()
     except Exception as e:
         st.error(f"Error loading page: {str(e)}")
         st.info("Please try refreshing the page or contact support.")
 
-# === RUN THE APP ===
 if st.session_state.logged_in:
     main_app()
 else:
