@@ -5,20 +5,19 @@ import pandas as pd
 import datetime
 import time
 
-# Cache Investpy data fetches to reduce repeated API calls and avoid rate limiting
 @st.cache_data(ttl=900)
 def get_stock_data_investpy(symbol, country, from_date, to_date):
     """
-    Fetch stock data from Investpy (Investing.com)
-    
+    Fetch historical stock data using Investpy.
+
     Args:
-        symbol (str): Stock symbol (without suffixes)
-        country (str): Country name as required by investpy
-        from_date (str): Starting date in dd/mm/yyyy format
-        to_date (str): Ending date in dd/mm/yyyy format
-    
+        symbol (str): Stock code/symbol (Investpy format, no suffix)
+        country (str): Country name (Investpy format, e.g., 'India', 'United States')
+        from_date (str): Start date in 'dd/mm/yyyy' format
+        to_date (str): End date in 'dd/mm/yyyy' format
+
     Returns:
-        DataFrame or None, error message or None
+        DataFrame or None, error string or None
     """
     try:
         df = investpy.get_stock_historical_data(
@@ -28,15 +27,15 @@ def get_stock_data_investpy(symbol, country, from_date, to_date):
             to_date=to_date
         )
         if df.empty:
-            return None, f"No data found for {symbol} in {country} via Investpy."
+            return None, f"No data found for {symbol} in {country} on Investing.com."
         return df, None
     except Exception as e:
-        return None, f"Investpy error for {symbol}: {str(e)}"
-
+        return None, f"Investpy error for {symbol}: {e}"
 
 def markets_page():
     st.header("📈 Markets (Powered by Investpy)")
 
+    # Predefined investment platform URLs by region
     INVESTMENT_PLATFORMS = {
         "🇮🇳 India": {
             "Zerodha": "https://zerodha.com/",
@@ -63,39 +62,24 @@ def markets_page():
             "SBI Securities": "https://sbisec.co.jp/",
             "Rakuten Securities": "https://www.rakuten-sec.co.jp/",
             "Monex": "https://monex.co.jp/",
-            "Matsui Securities": "https://matsui.co.jp/",
+            "Matsui": "https://matsui.co.jp/",
             "Interactive Brokers": "https://interactivebrokers.com/"
-        },
-        "Crypto": {
-            "Coinbase": "https://coinbase.com/",
-            "Binance": "https://binance.com/",
-            "WazirX": "https://wazirx.com/",
-            "CoinDCX": "https://coindcx.com/",
-            "Kraken": "https://kraken.com/"
-        },
-        "Commodities": {
-            "TD Ameritrade": "https://tdameritrade.com/",
-            "E*TRADE": "https://etrade.com/",
-            "Interactive Brokers": "https://interactivebrokers.com/",
-            "Charles Schwab": "https://schwab.com/",
-            "Fidelity": "https://fidelity.com/"
         }
     }
 
-    # Universe of symbols mapped by region
+    # Universe of symbols for Investpy (without suffixes)
     universe = {
-        "🇮🇳 India": ["RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK", "SBIN", "BHARTIARTL"],
+        "🇮🇳 India": ["RELIANCE", "TCS", "INFOSYS", "HDFC BANK", "ICICI BANK", "STATE BANK", "BHARTI AIRTEL"],
         "🇺🇸 US": ["AAPL", "TSLA", "MSFT", "AMZN", "GOOGL", "NVDA", "META"],
-        "🇪🇺 EU": ["SAP", "ASML", "NESN", "MC"],
-        "🇯🇵 Japan": ["7203", "6758", "9984", "6861", "8306"],
-        # Investpy does not support crypto or commodities directly well, so these are removed
+        "🇪🇺 EU": ["SAP", "ASML", "NESN", "TOTALENERGIES"],
+        "🇯🇵 Japan": ["TOYOTA", "SONY", "SOFTBANK", "MITSUBISHI UFJ"]
     }
 
-    # Map Streamlit region keys to Investpy country names
+    # Country name mapping for Investpy queries
     investpy_country_map = {
         "🇮🇳 India": "India",
         "🇺🇸 US": "United States",
-        "🇪🇺 EU": "Germany",   # Set to Germany for EU demo; adjust as needed per symbol
+        "🇪🇺 EU": "Germany",  # Common EU market reference; adjust per stock if needed
         "🇯🇵 Japan": "Japan"
     }
 
@@ -114,47 +98,47 @@ def markets_page():
     st.markdown(f"### Investment Platforms in {region}")
     platforms = INVESTMENT_PLATFORMS.get(region, INVESTMENT_PLATFORMS["🇺🇸 US"])
     cols = st.columns(len(platforms))
-    for idx, (name, url) in enumerate(platforms.items()):
+    for idx, (platform_name, platform_url) in enumerate(platforms.items()):
         with cols[idx]:
-            if st.button(name, key=f"platform_{region}_{name}"):
-                st.markdown(f"[Open {name}]({url}){{target=\"_blank\"}}", unsafe_allow_html=True)
+            if st.button(platform_name, key=f"platform_{region}_{platform_name}"):
+                st.markdown(f"[Open {platform_name}]({platform_url}){{target=\"_blank\"}}", unsafe_allow_html=True)
 
-    # Convert symbols to Investpy style (remove suffixes like .NS, .T, etc. — we store clean names)
     tabs = st.tabs(symbols)
 
     today = datetime.date.today()
-    from_date = (today - datetime.timedelta(days=30)).strftime('%d/%m/%Y')
-    to_date = today.strftime('%d/%m/%Y')
+    from_date = (today - datetime.timedelta(days=30)).strftime("%d/%m/%Y")
+    to_date = today.strftime("%d/%m/%Y")
 
     for tab, symbol in zip(tabs, symbols):
         with tab:
             st.subheader(symbol)
-            with st.spinner(f"Loading {symbol} data from Investpy..."):
+            with st.spinner(f"Loading {symbol} data from Investing.com..."):
                 df, error = get_stock_data_investpy(symbol, country, from_date, to_date)
-                time.sleep(1)  # polite delay to avoid scraping limits
+                time.sleep(1)  # polite delay to avoid rapid scraping
 
             if error:
                 st.error(error)
                 st.info("Investment platforms are still accessible below.")
             else:
-                # Format and display candlestick chart
-                fig = go.Figure(data=[go.Candlestick(
-                    x=df.index,
-                    open=df['Open'],
-                    high=df['High'],
-                    low=df['Low'],
-                    close=df['Close'],
-                    name=symbol,
-                    increasing_line_color='#26a69a',
-                    decreasing_line_color='#ef5350'
-                )])
+                fig = go.Figure(
+                    data=[go.Candlestick(
+                        x=df.index,
+                        open=df['Open'],
+                        high=df['High'],
+                        low=df['Low'],
+                        close=df['Close'],
+                        name=symbol,
+                        increasing_line_color="#26a69a",
+                        decreasing_line_color="#ef5350"
+                    )]
+                )
                 fig.update_layout(
                     title=f"{symbol} - 30-Day Chart (Investpy)",
                     template="plotly_dark",
                     height=450,
                     xaxis_title="Date",
                     yaxis_title=f"Price ({currency})",
-                    xaxis_rangeslider_visible=False
+                    xaxis_rangeslider_visible=False,
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
@@ -165,8 +149,8 @@ def markets_page():
                 col1, col2, col3, col4 = st.columns(4)
                 col1.metric("Current Price", f"{currency}{latest.Close:.2f}")
                 col2.metric("Daily Change", f"{change_pct:+.2f}%")
-                col3.metric("Day High", f"{currency}{latest.High:.2f}")
-                col4.metric("Day Low", f"{currency}{latest.Low:.2f}")
+                col3.metric("High", f"{currency}{latest.High:.2f}")
+                col4.metric("Low", f"{currency}{latest.Low:.2f}")
 
             st.markdown("---")
             st.subheader(f"Invest in {symbol}")
@@ -179,10 +163,12 @@ def markets_page():
                         st.markdown(f"[Invest via {platform_name}]({platform_url})", unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown("""
-    *Investing involves risk of loss. Please consider your financial goals and risk tolerance before investing.
-    Past performance is no guarantee of future results. Always do your due diligence or consult a financial adviser.*
-    """)
+    st.markdown(
+        """
+        *Investing involves risk of loss. Please consider your financial goals and risk tolerance before investing.*
+        *Past performance is no guarantee of future results. Always do your due diligence or consult a financial adviser.*
+        """
+    )
 
 
 if __name__ == "__main__":
