@@ -1,26 +1,25 @@
 import streamlit as st
-import yfinance as yf
+import investpy
 import plotly.graph_objects as go
 import pandas as pd
-import investpy
-import time
 import datetime
+import time
 
-# Cache yfinance data fetches to limit repeated API calls
-@st.cache_data(ttl=900)
-def get_stock_data_yfinance(symbol, period="30d"):
-    try:
-        ticker = yf.Ticker(symbol)
-        df = ticker.history(period=period)
-        if df.empty:
-            return None, f"No data found for {symbol} on Yahoo Finance."
-        return df, None
-    except Exception as e:
-        return None, f"Yahoo Finance error for {symbol}: {e}"
-
-# Fetch stock data from Investpy (Investing.com)
+# Cache Investpy data fetches to reduce repeated API calls and avoid rate limiting
 @st.cache_data(ttl=900)
 def get_stock_data_investpy(symbol, country, from_date, to_date):
+    """
+    Fetch stock data from Investpy (Investing.com)
+    
+    Args:
+        symbol (str): Stock symbol (without suffixes)
+        country (str): Country name as required by investpy
+        from_date (str): Starting date in dd/mm/yyyy format
+        to_date (str): Ending date in dd/mm/yyyy format
+    
+    Returns:
+        DataFrame or None, error message or None
+    """
     try:
         df = investpy.get_stock_historical_data(
             stock=symbol,
@@ -32,10 +31,11 @@ def get_stock_data_investpy(symbol, country, from_date, to_date):
             return None, f"No data found for {symbol} in {country} via Investpy."
         return df, None
     except Exception as e:
-        return None, f"Investpy error for {symbol}: {e}"
+        return None, f"Investpy error for {symbol}: {str(e)}"
+
 
 def markets_page():
-    st.header("📈 Markets with Yahoo Finance and Investpy")
+    st.header("📈 Markets (Powered by Investpy)")
 
     INVESTMENT_PLATFORMS = {
         "🇮🇳 India": {
@@ -82,21 +82,34 @@ def markets_page():
         }
     }
 
+    # Universe of symbols mapped by region
     universe = {
-        "🇮🇳 India": ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "BHARTIARTL.NS"],
+        "🇮🇳 India": ["RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK", "SBIN", "BHARTIARTL"],
         "🇺🇸 US": ["AAPL", "TSLA", "MSFT", "AMZN", "GOOGL", "NVDA", "META"],
-        "🇪🇺 EU": ["SAP.DE", "ASML.AS", "NESN.SW", "MC.PA"],
-        "🇯🇵 Japan": ["7203.T", "6758.T", "9984.T", "6861.T", "8306.T"],
-        "Crypto": ["BTC-USD", "ETH-USD", "ADA-USD", "DOT-USD", "SOL-USD"],
-        "Commodities": ["GC=F", "SI=F", "CL=F", "NG=F", "HG=F"],
-        "Popular ETFs": ["SPY", "QQQ", "VTI", "VOO", "IWM"]
+        "🇪🇺 EU": ["SAP", "ASML", "NESN", "MC"],
+        "🇯🇵 Japan": ["7203", "6758", "9984", "6861", "8306"],
+        # Investpy does not support crypto or commodities directly well, so these are removed
     }
 
-    # Ask user to choose the data provider
-    data_source = st.radio("Select Data Provider:", ("Yahoo Finance", "Investpy"), horizontal=True)
+    # Map Streamlit region keys to Investpy country names
+    investpy_country_map = {
+        "🇮🇳 India": "India",
+        "🇺🇸 US": "United States",
+        "🇪🇺 EU": "Germany",   # Set to Germany for EU demo; adjust as needed per symbol
+        "🇯🇵 Japan": "Japan"
+    }
+
+    currency_mapping = {
+        "🇮🇳 India": "₹",
+        "🇺🇸 US": "$",
+        "🇪🇺 EU": "€",
+        "🇯🇵 Japan": "¥",
+    }
 
     region = st.selectbox("Pick region / asset class", list(universe.keys()))
     symbols = universe[region]
+    country = investpy_country_map.get(region, "United States")
+    currency = currency_mapping.get(region, "$")
 
     st.markdown(f"### Investment Platforms in {region}")
     platforms = INVESTMENT_PLATFORMS.get(region, INVESTMENT_PLATFORMS["🇺🇸 US"])
@@ -106,33 +119,8 @@ def markets_page():
             if st.button(name, key=f"platform_{region}_{name}"):
                 st.markdown(f"[Open {name}]({url}){{target=\"_blank\"}}", unsafe_allow_html=True)
 
-    symbol_names = [
-        s.replace('.NS', '')
-         .replace('.DE', '')
-         .replace('.AS', '')
-         .replace('.SW', '')
-         .replace('.PA', '')
-         .replace('.T', '')
-         .replace('-USD', '') for s in symbols
-    ]
-
-    tabs = st.tabs(symbol_names)
-
-    currency_mapping = {
-        "🇮🇳 India": "₹",
-        "🇺🇸 US": "$",
-        "🇪🇺 EU": "€",
-        "🇯🇵 Japan": "¥",
-    }
-    currency = currency_mapping.get(region, "$")
-
-    # For Investpy, map regions to country names Investpy expects
-    investpy_country_map = {
-        "🇮🇳 India": "India",
-        "🇺🇸 US": "United States",
-        "🇪🇺 EU": "Germany", # Picking Germany as EU example; adapt as needed per symbol
-        "🇯🇵 Japan": "Japan"
-    }
+    # Convert symbols to Investpy style (remove suffixes like .NS, .T, etc. — we store clean names)
+    tabs = st.tabs(symbols)
 
     today = datetime.date.today()
     from_date = (today - datetime.timedelta(days=30)).strftime('%d/%m/%Y')
@@ -141,24 +129,15 @@ def markets_page():
     for tab, symbol in zip(tabs, symbols):
         with tab:
             st.subheader(symbol)
-            with st.spinner(f"Loading {symbol} data from {data_source}..."):
-
-                if data_source == "Yahoo Finance":
-                    df, error = get_stock_data_yfinance(symbol)
-                else:  # Investpy
-                    # For Investpy, clean symbol to base name, without suffix
-                    clean_symbol = symbol.replace('.NS', '').replace('.DE', '').replace('.AS', '').replace('.SW', '').replace('.PA', '').replace('.T', '')
-                    country = investpy_country_map.get(region, "United States")
-                    df, error = get_stock_data_investpy(clean_symbol, country, from_date, to_date)
-
-                time.sleep(1)  # polite delay
+            with st.spinner(f"Loading {symbol} data from Investpy..."):
+                df, error = get_stock_data_investpy(symbol, country, from_date, to_date)
+                time.sleep(1)  # polite delay to avoid scraping limits
 
             if error:
                 st.error(error)
                 st.info("Investment platforms are still accessible below.")
             else:
-                # Investpy's DataFrame index is date, and columns: Open, High, Low, Close, Volume
-                # yfinance returns similar, so plotting is uniform
+                # Format and display candlestick chart
                 fig = go.Figure(data=[go.Candlestick(
                     x=df.index,
                     open=df['Open'],
@@ -169,9 +148,8 @@ def markets_page():
                     increasing_line_color='#26a69a',
                     decreasing_line_color='#ef5350'
                 )])
-
                 fig.update_layout(
-                    title=f"{symbol} - 30-Day Chart from {data_source}",
+                    title=f"{symbol} - 30-Day Chart (Investpy)",
                     template="plotly_dark",
                     height=450,
                     xaxis_title="Date",
@@ -182,13 +160,13 @@ def markets_page():
 
                 latest = df.iloc[-1]
                 previous = df.iloc[-2] if len(df) > 1 else df.iloc[-1]
-                change = (latest.Close - previous.Close) / previous.Close * 100
+                change_pct = (latest.Close - previous.Close) / previous.Close * 100
 
                 col1, col2, col3, col4 = st.columns(4)
                 col1.metric("Current Price", f"{currency}{latest.Close:.2f}")
-                col2.metric("Daily Change", f"{change:+.2f}%")
-                col3.metric("High", f"{currency}{latest.High:.2f}")
-                col4.metric("Low", f"{currency}{latest.Low:.2f}")
+                col2.metric("Daily Change", f"{change_pct:+.2f}%")
+                col3.metric("Day High", f"{currency}{latest.High:.2f}")
+                col4.metric("Day Low", f"{currency}{latest.Low:.2f}")
 
             st.markdown("---")
             st.subheader(f"Invest in {symbol}")
@@ -205,6 +183,7 @@ def markets_page():
     *Investing involves risk of loss. Please consider your financial goals and risk tolerance before investing.
     Past performance is no guarantee of future results. Always do your due diligence or consult a financial adviser.*
     """)
+
 
 if __name__ == "__main__":
     markets_page()
