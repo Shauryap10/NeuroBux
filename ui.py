@@ -51,7 +51,7 @@ pages = {
     "📑 View Expenses": lambda: view_expenses.view_expenses_page(exp_mgr, inc_mgr),
     "🧠 Smart Analytics": lambda: smart_analytics.smart_analytics_page(exp_mgr, inc_mgr),
     "📈 Markets": markets.markets_page,
-     "💼 Portfolio Tracker": portfolio_tracker.portfolio_tracker_page,
+    "💼 Portfolio Tracker": portfolio_tracker.portfolio_tracker_page,
     "💬 AI Coach": lambda: ai_coach.ai_coach_page(exp_mgr, inc_mgr, synbot),
 }
 
@@ -170,6 +170,7 @@ if st.session_state.logged_in:
     main_app()
 else:
     login_page(auth)
+
 
 
 
