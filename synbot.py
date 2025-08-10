@@ -4,9 +4,9 @@ import yfinance as yf
 import streamlit as st
 
 class SynBot:
-def init(self):
-    self.api_key = st.secrets.get("openrouter_api_key", None)
-    self.base_url = "https://openrouter.ai/api/v1"
+    def init(self):
+        self.api_key = st.secrets.get("openrouter_api_key", None)
+        self.base_url = "https://openrouter.ai/api/v1"
 
 def _live_price(self, symbol):  
     try:  
