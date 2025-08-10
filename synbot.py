@@ -8,7 +8,7 @@ import streamlit as st
 # ========================
 class SynBot:
     BASE_URL = "https://openrouter.ai/api/v1"
-    MODEL = "openai/gpt-3.5-turbo"
+    MODEL ="deepseek/deepseek-r1-0528-qwen3-8b:free"
 
     def __init__(self):
         self.api_key = st.secrets.get("openrouter_api_key")
