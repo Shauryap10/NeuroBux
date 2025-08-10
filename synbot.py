@@ -111,7 +111,7 @@ class SynBot:
                 f"{self.base_url}/chat/completions",
                 headers=headers,
                 json={
-                    "model": "openai/gpt-3.5-turbo",
+                    "model": "google/gemma-3n-e2b-it:free",
                     "messages": messages,
                     "max_tokens": 500,
                     "temperature": 0.7,
