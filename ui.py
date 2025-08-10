@@ -14,6 +14,14 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+Hide Streamlit's default sidebar menu & footer
+st.markdown("""
+    <style>
+    [data-testid="stSidebarNav"] {display: none;} /* Hide default multipage menu */
+    #MainMenu {visibility: hidden;} /* Hide main hamburger menu */
+    footer {visibility: hidden;}   /* Hide footer */
+    </style>
+""", unsafe_allow_html=True)
 
 # Initialize session states
 for key, default in {
