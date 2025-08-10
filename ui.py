@@ -3,7 +3,7 @@ from auth import AuthManager
 from database import ExpenseManager, IncomeManager, init_supabase
 from synbot import SynBot
 from pages.login import login_page
-from pages import dashboard, add_transaction, view_expense, ai_coach, smart_analytics
+from pages import dashboard, add_transaction, view_expenses, ai_coach, smart_analytics
 from pages import portfolio_tracker
 from datetime import datetime
 
@@ -177,6 +177,7 @@ if st.session_state.logged_in:
     main_app()
 else:
     login_page(auth)
+
 
 
 
