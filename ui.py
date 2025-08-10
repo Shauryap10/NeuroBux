@@ -14,7 +14,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-Hide Streamlit's default sidebar menu & footer
+# Hide Streamlit's default sidebar menu
 st.markdown("""
     <style>
     [data-testid="stSidebarNav"] {display: none;} /* Hide default multipage menu */
