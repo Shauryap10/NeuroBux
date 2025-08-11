@@ -4,7 +4,6 @@ from database import ExpenseManager, IncomeManager, init_supabase
 from synbot import SynBot
 from pages.login import login_page
 from pages import dashboard, add_transaction, view_expenses, ai_coach, smart_analytics
-from pages import portfolio_tracker
 from datetime import datetime
 
 # Page configuration
@@ -58,7 +57,6 @@ pages = {
     "➕ Add Transaction": lambda: add_transaction.add_transaction_page(exp_mgr, inc_mgr),
     "📑 View Expenses": lambda: view_expenses.view_expenses_page(exp_mgr, inc_mgr),
     "🧠 Smart Analytics": lambda: smart_analytics.smart_analytics_page(exp_mgr, inc_mgr),
-    "💼 Portfolio Tracker": portfolio_tracker.portfolio_tracker_page,
     "💬 AI Coach": lambda: ai_coach.ai_coach_page(exp_mgr, inc_mgr, synbot),
 }
 
