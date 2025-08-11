@@ -1,29 +1,18 @@
 import re
-import requests
 import yfinance as yf
 import streamlit as st
-from cohere import ClientV2  # Optional: remove if not using Cohere
+from cohere import ClientV2  # Ensure cohere is installed: pip install cohere
 
 class SynBot:
-    def __init__(self, provider="openrouter", model=None):
+    def __init__(self, model="command-a-03-2025"):
         """
-        provider: "openrouter" or "cohere"
-        model: defaults to:
-            - OpenRouter: google/gemma-3n-e2b-it:free
-            - Cohere: command-a-03-2025
+        Uses Cohere API for financial AI coaching.
+        model: Cohere model name (default: command-a-03-2025)
         """
-        self.provider = provider.lower()
-        self.model = model or (
-            "google/gemma-3n-e2b-it:free" if self.provider == "openrouter" else "command-a-03-2025"
-        )
-
-        if self.provider == "openrouter":
-            self.api_key = st.secrets.get("openrouter_api_key")
-            self.base_url = "https://openrouter.ai/api/v1"
-        elif self.provider == "cohere":
-            self.api_key = st.secrets.get("cohere_api_key")
-        else:
-            raise ValueError("Unsupported provider. Use 'openrouter' or 'cohere'.")
+        self.model = model
+        self.api_key = st.secrets.get("cohere_api_key")
+        if not self.api_key:
+            raise ValueError("🤖 API Key missing! Please add 'cohere_api_key' to Streamlit secrets.")
 
     def _format_financial_summary(self, df_exp, df_inc, analytics_data):
         parts = []
@@ -34,11 +23,11 @@ class SynBot:
             try:
                 top_cat = df_exp.groupby("Category")["Amount"].sum().idxmax()
                 avg_exp = df_exp["Amount"].mean()
-                cat_split = df_exp.groupby("Category")["Amount"].sum().to_dict()
+                category_split = df_exp.groupby("Category")["Amount"].sum().to_dict()
                 parts += [
                     f"Top category: {top_cat}",
                     f"Average expense: ₹{avg_exp:.2f}",
-                    f"Category breakdown: {cat_split}"
+                    f"Category breakdown: {category_split}"
                 ]
             except Exception:
                 pass
@@ -82,16 +71,14 @@ class SynBot:
             return self._live_price(symbol_match.group(1))
 
         context = self._format_financial_summary(df_exp, df_inc, analytics_data)
-        if not self.api_key:
-            return f"🤖 API Key missing! Please add your {self.provider.title()} API key to Streamlit secrets."
 
         messages = [
             {
                 "role": "system",
                 "content": (
                     "You are SynBot, a knowledgeable financial AI assistant for NeuroBux. "
-                    "Analyze spending patterns, give budgeting & saving tips, investment basics, and motivational advice. "
-                    "Be friendly, concise, and occasionally use emojis."
+                    "Analyze spending patterns, give budgeting & saving tips, investment basics, "
+                    "and motivational advice. Be friendly, concise, and occasionally use emojis."
                 )
             },
             {
@@ -99,51 +86,7 @@ class SynBot:
                 "content": f"Question: {q_clean}\n\nUser's Financial Context: {context}"
             }
         ]
-
-        if self.provider == "openrouter":
-            return self._call_openrouter_api(messages)
-        elif self.provider == "cohere":
-            return self._call_cohere_stream(messages)
-
-    def _call_openrouter_api(self, messages):
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://neurobux.streamlit.app/",
-            "X-Title": "NeuroBux Finance Tracker"
-        }
-        try:
-            r = requests.post(
-                f"{self.base_url}/chat/completions",
-                headers=headers,
-                json={
-                    "model": self.model,
-                    "messages": messages,
-                    "max_tokens": 500,
-                    "temperature": 0.7,
-                    "top_p": 0.9
-                },
-                timeout=30
-            )
-            error_messages = {
-                401: "🔑 Authentication Failed! Check your API key.",
-                429: "⏳ Rate Limit Exceeded! Try again later.",
-                403: "🚫 Access Forbidden! Model permission issue."
-            }
-            if r.status_code in error_messages:
-                return error_messages[r.status_code]
-            r.raise_for_status()
-            return r.json()["choices"][0]["message"]["content"].strip()
-        except requests.exceptions.Timeout:
-            return "⏰ Request Timeout! Please try again."
-        except requests.exceptions.ConnectionError:
-            return "🌐 Connection Error! Check internet."
-        except requests.exceptions.HTTPError as e:
-            return f"🤖 API Error! HTTP {r.status_code}: {r.text[:100]}..."
-        except (KeyError, IndexError):
-            return "🤖 Invalid Response Format!"
-        except Exception as e:
-            return f"🤖 Unexpected Error: {str(e)[:100]}..."
+        return self._call_cohere_stream(messages)
 
     def _call_cohere_stream(self, messages):
         try:
