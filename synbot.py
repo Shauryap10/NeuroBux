@@ -1,3 +1,4 @@
+from synbot import SmartBudgetAdvisor
 import re
 import requests
 import yfinance as yf
