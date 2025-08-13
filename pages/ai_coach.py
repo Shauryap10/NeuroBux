@@ -3,7 +3,7 @@ import pandas as pd
 from database import SpendingAnalyzer
 
 def ai_coach_page(exp_mgr, inc_mgr, synbot):
-    st.header("💬 AI Financial Coach")
+    st.header(" NeuroBot ")
     st.markdown("*Get personalized financial advice based on your spending and income data*")
 
     # Get user's financial data
@@ -73,13 +73,13 @@ def ai_coach_page(exp_mgr, inc_mgr, synbot):
     st.markdown("---")
 
     # Chat interface
-    st.subheader("💬 Chat with SynBot")
+    st.subheader("💬 Chat with NeuroBot")
     
     # Initialize messages
     if "messages" not in st.session_state:
         st.session_state.messages = []
         # Add welcome message
-        welcome_msg = """👋 Hello! I'm SynBot, your personal financial coach. I'm here to help you understand your spending habits, create better budgets, and achieve your financial goals.
+        welcome_msg = """👋 Hello! I'm NeuroBot, your personal financial coach. I'm here to help you understand your spending habits, create better budgets, and achieve your financial goals.
 
 I can analyze your expense and income data to provide personalized advice. Feel free to ask me anything about:
 • Budgeting and expense management
@@ -139,3 +139,4 @@ What would you like to know about your finances today?"""
                     file_name=f"synbot_chat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain"
                 )
+
