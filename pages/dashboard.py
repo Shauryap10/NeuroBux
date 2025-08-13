@@ -5,7 +5,7 @@ from datetime import datetime
 from utils import export_df_to_csv, export_df_to_pdf
 
 def dashboard_page(exp_mgr, inc_mgr):
-    st.header("📊 Dashboard")
+    st.header("Dashboard")
 
     all_expenses = exp_mgr.get_expenses(st.session_state.user_email)
     months = sorted({e[3][:7] for e in all_expenses if e[3]}, reverse=True)
@@ -154,3 +154,4 @@ def dashboard_page(exp_mgr, inc_mgr):
             st.session_state.confirm_reset_month = False
             st.session_state.confirm_delete_all = False
             st.info("Operation cancelled")
+
