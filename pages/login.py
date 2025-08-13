@@ -134,5 +134,6 @@ def login_page(auth):
     # Footer
     st.markdown("---")
     st.caption("🔒 Your financial data is encrypted and secure | 📱 Access anywhere, anytime | 🤖 AI-powered insights")
-    st.caption("© 2025 NeuroBux - Smart Finance Tracking")
+    st.caption("© 2025 NeuroBux - AI-powered finance tracker")
+
 
