@@ -7,7 +7,7 @@ from database import SpendingAnalyzer
 from synbot import SmartBudgetAdvisor
 
 def smart_analytics_page(exp_mgr, inc_mgr):
-    st.header("🧠 Smart Budget Analytics")
+    st.header("Smart Budget Analytics")
     
     # Initialize analyzer with Supabase client (updated from SQLite conn)
     analyzer = SpendingAnalyzer(exp_mgr.supabase)  # ✅ Changed from exp_mgr.conn
@@ -330,3 +330,4 @@ def smart_analytics_page(exp_mgr, inc_mgr):
             st.success("📈 Analytics report ready for download!")
         else:
             st.info("📝 No data available to export.")
+
