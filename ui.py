@@ -53,11 +53,11 @@ synbot = SynBot()
 
 # Page navigation
 pages = {
-    " Dashboard": lambda: dashboard.dashboard_page(exp_mgr, inc_mgr),
-    " Add Transaction": lambda: add_transaction.add_transaction_page(exp_mgr, inc_mgr),
-    " View Expenses": lambda: view_expenses.view_expenses_page(exp_mgr, inc_mgr),
-    " Smart Analytics": lambda: smart_analytics.smart_analytics_page(exp_mgr, inc_mgr),
-    " AI Coach": lambda: ai_coach.ai_coach_page(exp_mgr, inc_mgr, synbot),
+    "Dashboard": lambda: dashboard.dashboard_page(exp_mgr, inc_mgr),
+    "Add Transaction": lambda: add_transaction.add_transaction_page(exp_mgr, inc_mgr),
+    "View Expenses": lambda: view_expenses.view_expenses_page(exp_mgr, inc_mgr),
+    "Smart Analytics": lambda: smart_analytics.smart_analytics_page(exp_mgr, inc_mgr),
+    "NeuroBot": lambda: ai_coach.ai_coach_page(exp_mgr, inc_mgr, synbot),
 }
 
 def test_database_connection():
@@ -158,7 +158,7 @@ def main_app():
         # Reset to logged out state
         st.session_state.logged_in = False
         st.session_state.user_email = ""
-        st.session_state.page = " Dashboard"
+        st.session_state.page = "Dashboard"
         
         st.sidebar.success("👋 Successfully logged out!")
         st.rerun()
@@ -175,6 +175,7 @@ if st.session_state.logged_in:
     main_app()
 else:
     login_page(auth)
+
 
 
 
