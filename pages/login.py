@@ -40,7 +40,7 @@ def login_page(auth):
                         st.success("🎉 " + message)
                         st.session_state.logged_in = True
                         st.session_state.user_email = email.lower().strip()
-                        st.session_state.page = "🏠 Dashboard"
+                        st.session_state.page = "Dashboard"
                         st.balloons()
                         
                         # Add welcome message
@@ -135,3 +135,4 @@ def login_page(auth):
     st.markdown("---")
     st.caption("🔒 Your financial data is encrypted and secure | 📱 Access anywhere, anytime | 🤖 AI-powered insights")
     st.caption("© 2025 NeuroBux - Smart Finance Tracking")
+
