@@ -4,7 +4,7 @@ from datetime import date, datetime
 from io import StringIO
 
 def add_transaction_page(exp_mgr, inc_mgr):
-    st.header("➕ Add Transaction")
+    st.header(" Add Transaction")
 
     # Month Selector
     all_expenses = exp_mgr.get_expenses(st.session_state.user_email)
@@ -71,7 +71,7 @@ def add_transaction_page(exp_mgr, inc_mgr):
             st.error(f"Error processing file: {e}")
 
     # --- Add Transaction Form ---
-    st.subheader("➕ Manual Entry")
+    st.subheader(" Manual Entry")
     option = st.radio("Type", ["Expense", "Income"], horizontal=True)
 
     with st.form("tx_form"):
@@ -100,3 +100,4 @@ def add_transaction_page(exp_mgr, inc_mgr):
                 else:
                     inc_mgr.add_income(st.session_state.user_email, amount, str(tx_date))
                     st.success("Income saved!")
+
