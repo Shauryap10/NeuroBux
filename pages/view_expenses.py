@@ -2,7 +2,7 @@ import streamlit as st
 from datetime import datetime
 
 def view_expenses_page(exp_mgr, inc_mgr):
-    st.header("📑 View Expenses")
+    st.header("View Expenses")
 
     all_expenses = exp_mgr.get_expenses(st.session_state.user_email)
     months = sorted({e[3][:7] for e in all_expenses if e[3]}, reverse=True)
@@ -146,3 +146,4 @@ def view_expenses_page(exp_mgr, inc_mgr):
             
     except Exception as e:
         st.error(f"Error loading income: {str(e)}")
+
