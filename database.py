@@ -34,7 +34,6 @@ class ExpenseManager:
         self.supabase = supabase
 
     def add_expense(self, user, cat, amt, dt_str):
-        # ... (no changes needed here)
         if not self.supabase or not cat or amt <= 0:
             return False
         
@@ -79,7 +78,6 @@ class ExpenseManager:
             return []
 
     def delete_expense(self, user, expense_id):
-        # ... (no changes needed here)
         if not self.supabase:
             return False
         
@@ -105,7 +103,6 @@ class ExpenseManager:
             return False
 
     def delete_all_user_data(self, user):
-        # ... (no changes needed here)
         if not self.supabase:
             return False
         
@@ -121,7 +118,6 @@ class IncomeManager:
         self.supabase = supabase
 
     def add_income(self, user, amt, dt_str):
-        # ... (no changes needed here)
         if not self.supabase or amt <= 0:
             return False
         
@@ -164,7 +160,6 @@ class IncomeManager:
             return []
 
     def delete_income(self, user, income_id):
-        # ... (no changes needed here)
         if not self.supabase:
             return False
         
@@ -190,7 +185,6 @@ class IncomeManager:
             return False
 
     def delete_all_user_data(self, user):
-        # ... (no changes needed here)
         if not self.supabase:
             return False
         
@@ -202,7 +196,6 @@ class IncomeManager:
             return False
 
 class SpendingAnalyzer:
-    # ... (no changes needed in this class)
     def __init__(self, supabase_client):
         self.supabase = supabase_client
         
