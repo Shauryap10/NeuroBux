@@ -2,6 +2,7 @@ import streamlit as st
 from supabase import create_client, Client
 import pandas as pd
 from datetime import datetime
+import calendar  # <-- Import the calendar module
 
 # Initialize Supabase client
 @st.cache_resource
@@ -17,11 +18,23 @@ def init_supabase():
 
 supabase = init_supabase()
 
+def _get_month_date_range(year_month_str):
+    """
+    Helper function to get the correct start and end date for a month string (e.g., "2025-09").
+    This correctly handles all month lengths, including leap years.
+    """
+    year, month = map(int, year_month_str.split('-'))
+    _, num_days = calendar.monthrange(year, month)
+    start_date = f"{year_month_str}-01"
+    end_date = f"{year_month_str}-{num_days}"
+    return start_date, end_date
+
 class ExpenseManager:
     def __init__(self):
         self.supabase = supabase
 
     def add_expense(self, user, cat, amt, dt_str):
+        # ... (no changes needed here)
         if not self.supabase or not cat or amt <= 0:
             return False
         
@@ -46,21 +59,12 @@ class ExpenseManager:
             query = self.supabase.table("expenses").select("*").eq("user_email", user)
             
             if year_month:
-                # Filter by year-month (e.g., "2025-01")
-                start_date = f"{year_month}-01"
-                # Get last day of month
-                if year_month.endswith(('01', '03', '05', '07', '08', '10', '12')):
-                    end_date = f"{year_month}-31"
-                elif year_month.endswith(('04', '06', '09', '11')):
-                    end_date = f"{year_month}-30"
-                else:  # February
-                    end_date = f"{year_month}-29"
-                
+                # FIXED: Use the helper function to get correct dates
+                start_date, end_date = _get_month_date_range(year_month)
                 query = query.gte("date", start_date).lte("date", end_date)
             
             result = query.order("date", desc=True).execute()
             
-            # Convert to the format expected by your app (user, category, amount, date)
             expenses = []
             for row in result.data:
                 expenses.append((
@@ -75,6 +79,7 @@ class ExpenseManager:
             return []
 
     def delete_expense(self, user, expense_id):
+        # ... (no changes needed here)
         if not self.supabase:
             return False
         
@@ -89,10 +94,10 @@ class ExpenseManager:
         if not self.supabase:
             return False
         
-        current_month = datetime.now().strftime("%Y-%m")
+        current_month_str = datetime.now().strftime("%Y-%m")
         try:
-            start_date = f"{current_month}-01"
-            end_date = f"{current_month}-31"
+            # FIXED: Use the helper function here as well
+            start_date, end_date = _get_month_date_range(current_month_str)
             result = self.supabase.table("expenses").delete().eq("user_email", user).gte("date", start_date).lte("date", end_date).execute()
             return True
         except Exception as e:
@@ -100,6 +105,7 @@ class ExpenseManager:
             return False
 
     def delete_all_user_data(self, user):
+        # ... (no changes needed here)
         if not self.supabase:
             return False
         
@@ -115,6 +121,7 @@ class IncomeManager:
         self.supabase = supabase
 
     def add_income(self, user, amt, dt_str):
+        # ... (no changes needed here)
         if not self.supabase or amt <= 0:
             return False
         
@@ -138,19 +145,12 @@ class IncomeManager:
             query = self.supabase.table("income").select("*").eq("user_email", user)
             
             if year_month:
-                start_date = f"{year_month}-01"
-                if year_month.endswith(('01', '03', '05', '07', '08', '10', '12')):
-                    end_date = f"{year_month}-31"
-                elif year_month.endswith(('04', '06', '09', '11')):
-                    end_date = f"{year_month}-30"
-                else:
-                    end_date = f"{year_month}-29"
-                
+                # FIXED: Use the helper function for income too
+                start_date, end_date = _get_month_date_range(year_month)
                 query = query.gte("date", start_date).lte("date", end_date)
             
             result = query.order("date", desc=True).execute()
             
-            # Convert to expected format (user, amount, date)
             income = []
             for row in result.data:
                 income.append((
@@ -164,6 +164,7 @@ class IncomeManager:
             return []
 
     def delete_income(self, user, income_id):
+        # ... (no changes needed here)
         if not self.supabase:
             return False
         
@@ -178,10 +179,10 @@ class IncomeManager:
         if not self.supabase:
             return False
         
-        current_month = datetime.now().strftime("%Y-%m")
+        current_month_str = datetime.now().strftime("%Y-%m")
         try:
-            start_date = f"{current_month}-01"
-            end_date = f"{current_month}-31"
+            # FIXED: Use the helper function here as well
+            start_date, end_date = _get_month_date_range(current_month_str)
             result = self.supabase.table("income").delete().eq("user_email", user).gte("date", start_date).lte("date", end_date).execute()
             return True
         except Exception as e:
@@ -189,6 +190,7 @@ class IncomeManager:
             return False
 
     def delete_all_user_data(self, user):
+        # ... (no changes needed here)
         if not self.supabase:
             return False
         
@@ -200,6 +202,7 @@ class IncomeManager:
             return False
 
 class SpendingAnalyzer:
+    # ... (no changes needed in this class)
     def __init__(self, supabase_client):
         self.supabase = supabase_client
         
