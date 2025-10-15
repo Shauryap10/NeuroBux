@@ -175,10 +175,3 @@ if st.session_state.logged_in:
     main_app()
 else:
     login_page(auth)
-
-
-
-
-
-
-
