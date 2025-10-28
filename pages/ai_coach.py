@@ -111,7 +111,7 @@ What would you like to know about your finances today?"""
 
         # Generate AI response with enhanced context
         with st.chat_message("assistant"):
-            with st.spinner("SynBot is analyzing your financial data..."):
+            with st.spinner("NeuroBot is analyzing your financial data..."):
                 answer = synbot.answer(prompt, df_exp, df_inc, analytics_data)
                 st.markdown(answer)
                 
@@ -139,4 +139,5 @@ What would you like to know about your finances today?"""
                     file_name=f"synbot_chat_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain"
                 )
+
 
