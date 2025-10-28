@@ -76,7 +76,7 @@ class SynBot:
             {
                 "role": "system",
                 "content": (
-                    "You are SynBot, a knowledgeable financial AI assistant for NeuroBux. "
+                    "You are NeuroBot, a knowledgeable financial AI assistant for NeuroBux. "
                     "Analyze spending patterns, give budgeting & saving tips, investment basics, "
                     "and motivational advice. Be friendly, concise, and occasionally use emojis."
                 )
